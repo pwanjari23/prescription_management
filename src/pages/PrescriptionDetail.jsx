@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, Printer, Share2, Plus, Eye } from 'lucide-react';
+import { ArrowLeft, Plus, Eye } from 'lucide-react';
 import { prescriptions } from '../data/prescriptions';
 import { patients } from '../data/patients';
 import { currentDoctor } from '../data/doctors';
@@ -53,25 +53,13 @@ export default function PrescriptionDetail() {
               {new Date(rx.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })} at {rx.time}
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div>
             <button
               onClick={() => navigate(`/prescriptions/${rx.id}/preview`)}
               className="btn-primary"
             >
               <Eye size={15} />
               Preview
-            </button>
-            <button className="btn-secondary">
-              <Download size={15} />
-              Download PDF
-            </button>
-            <button className="btn-secondary">
-              <Printer size={15} />
-              Print
-            </button>
-            <button className="btn-secondary">
-              <Share2 size={15} />
-              Share
             </button>
           </div>
         </div>
