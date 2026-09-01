@@ -66,9 +66,18 @@ export default function PrescriptionPreview() {
   const printRef = useRef(null);
   const [downloading, setDownloading] = useState(false);
 
-  const cleanId = id ? decodeURIComponent(id).trim().replace(/[\s_]/g, '-') : '';
-  const rx = mockPrescriptions.find(p => p.id === id || p.id === cleanId || p.id.replace(/[\s_]/g, '-') === cleanId) || mockPrescriptions[0];
-  const patient = mockPatients.find(p => p.id === rx.patientId) || mockPatients[0];
+  const rawId = id ? decodeURIComponent(id).trim() : '';
+  const cleanId = rawId.replace(/[\s_]/g, '-');
+
+  const rx = mockPrescriptions.find(p => p && (p.id === rawId || p.id === cleanId || (p.id && p.id.replace(/[\s_]/g, '-') === cleanId))) || mockPrescriptions[0] || {};
+  const patient = mockPatients.find(p => p && p.id === rx.patientId) || mockPatients[0] || {};
+
+  const rxId = rx.id || 'RX-2026-00128';
+  const patientName = patient.name || rx.patientName || 'Rahul Sharma';
+  const patientAge = patient.age || 56;
+  const patientGender = patient.gender || 'Male';
+  const patientPhone = (patient.phone || '9823012345').replace(/X/g, '9');
+  const medicinesList = Array.isArray(rx.medicines) ? rx.medicines : [];
 
   /* ── PDF Download via html2canvas + jspdf ── */
   const handleDownloadPDF = async () => {

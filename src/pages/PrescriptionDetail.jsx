@@ -10,7 +10,7 @@ const StatusBadge = ({ status }) => {
   return (
     <span className={`badge ${cfg[status] || 'badge-draft'} text-xs`}>
       <span className={`w-1.5 h-1.5 rounded-full ${dots[status] || 'bg-slate-400'}`} />
-      {status}
+      {status || 'Draft'}
     </span>
   );
 };
@@ -19,9 +19,23 @@ export default function PrescriptionDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const cleanId = id ? decodeURIComponent(id).trim().replace(/[\s_]/g, '-') : '';
-  const rx = mockPrescriptions.find(p => p.id === id || p.id === cleanId || p.id.replace(/[\s_]/g, '-') === cleanId) || mockPrescriptions[0];
-  const patient = mockPatients.find(p => p.id === rx.patientId) || mockPatients[0];
+  const rawId = id ? decodeURIComponent(id).trim() : '';
+  const cleanId = rawId.replace(/[\s_]/g, '-');
+  
+  const rx = mockPrescriptions.find(p => p && (p.id === rawId || p.id === cleanId || (p.id && p.id.replace(/[\s_]/g, '-') === cleanId))) || mockPrescriptions[0] || {};
+  const patient = mockPatients.find(p => p && p.id === rx.patientId) || mockPatients[0] || {};
+
+  const rxId = rx.id || 'RX-2026-00128';
+  const patientName = patient.name || rx.patientName || 'Rahul Sharma';
+  const patientId = patient.id || rx.patientId || 'PT-00124';
+  const patientAge = patient.age || 56;
+  const patientGender = patient.gender || 'Male';
+  const patientBloodGroup = patient.bloodGroup || 'O+';
+  const patientAllergies = Array.isArray(patient.allergies) ? patient.allergies : [];
+  const medicinesList = Array.isArray(rx.medicines) ? rx.medicines : [];
+  const vitals = rx.vitals || {};
+
+  const initials = patientName.split(' ').map(n => n[0]).join('').slice(0, 2) || 'PT';
 
   return (
     <div className="space-y-4 w-full">
@@ -33,24 +47,24 @@ export default function PrescriptionDetail() {
           </button>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold text-slate-900 font-mono">{rx.id}</h1>
+              <h1 className="text-xl font-bold text-slate-900 font-mono">{rxId}</h1>
               <StatusBadge status={rx.status} />
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              Prescribed on {rx.date} at {rx.time || '11:42 AM'}
+              Prescribed on {rx.date || '2026-09-01'} at {rx.time || '11:42 AM'}
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           <button
-            onClick={() => navigate(`/prescriptions/${rx.id}/preview`)}
+            onClick={() => navigate(`/prescriptions/${rxId}/preview`)}
             className="btn-primary btn-sm flex items-center gap-1.5"
           >
             <Eye size={14} /> Preview Printable Sheet
           </button>
           <button
-            onClick={() => navigate(`/prescriptions/new?patient=${rx.patientId}`)}
+            onClick={() => navigate(`/prescriptions/new?patient=${patientId}`)}
             className="btn-secondary btn-sm flex items-center gap-1"
           >
             <Plus size={14} /> New Rx
@@ -68,32 +82,30 @@ export default function PrescriptionDetail() {
             </span>
             <div className="flex items-center gap-2.5 mb-3">
               <div className="w-9 h-9 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <span className="text-primary-900 text-xs font-bold">
-                  {patient.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                </span>
+                <span className="text-primary-900 text-xs font-bold">{initials}</span>
               </div>
               <div className="min-w-0">
-                <p className="font-bold text-slate-900 text-xs truncate">{patient.name}</p>
-                <p className="text-[11px] text-slate-500 font-mono">{patient.id}</p>
+                <p className="font-bold text-slate-900 text-xs truncate">{patientName}</p>
+                <p className="text-[11px] text-slate-500 font-mono">{patientId}</p>
               </div>
             </div>
             <div className="space-y-1.5 text-xs text-slate-600">
               <div className="flex justify-between border-b border-slate-100 pb-1">
                 <span className="text-slate-400">Age / Gender</span>
-                <span className="font-semibold text-slate-800">{patient.age} Yrs · {patient.gender}</span>
+                <span className="font-semibold text-slate-800">{patientAge} Yrs · {patientGender}</span>
               </div>
               <div className="flex justify-between border-b border-slate-100 pb-1">
                 <span className="text-slate-400">Blood Group</span>
-                <span className="font-semibold text-slate-800">{patient.bloodGroup || 'O+'}</span>
+                <span className="font-semibold text-slate-800">{patientBloodGroup}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">Allergies</span>
-                <span className="font-semibold text-amber-700">{patient.allergies.length ? patient.allergies.join(', ') : 'None'}</span>
+                <span className="font-semibold text-amber-700">{patientAllergies.length ? patientAllergies.join(', ') : 'None'}</span>
               </div>
             </div>
           </div>
           <button
-            onClick={() => navigate(`/patients/${patient.id}`)}
+            onClick={() => navigate(`/patients/${patientId}`)}
             className="mt-3 w-full btn-secondary btn-sm justify-center py-1 text-xs"
           >
             View Patient Profile
@@ -137,13 +149,13 @@ export default function PrescriptionDetail() {
               <span className="text-slate-400 text-[10px] font-bold uppercase block">Diagnosis</span>
               <p className="text-slate-900 font-bold">{rx.diagnosis || 'Stable Angina, Hypertension'}</p>
             </div>
-            {rx.vitals && (
+            {vitals && (
               <div className="grid grid-cols-4 gap-1 pt-1">
                 {[
-                  { label: 'BP', val: rx.vitals.bp },
-                  { label: 'Pulse', val: rx.vitals.pulse },
-                  { label: 'SpO₂', val: rx.vitals.spo2 },
-                  { label: 'Temp', val: rx.vitals.temp },
+                  { label: 'BP', val: vitals.bp },
+                  { label: 'Pulse', val: vitals.pulse },
+                  { label: 'SpO₂', val: vitals.spo2 },
+                  { label: 'Temp', val: vitals.temp },
                 ].filter(v => v.val).map(v => (
                   <div key={v.label} className="bg-slate-50 p-1 rounded text-center border border-slate-100">
                     <span className="text-[9px] text-slate-400 block">{v.label}</span>
@@ -160,7 +172,7 @@ export default function PrescriptionDetail() {
       <div className="card overflow-hidden">
         <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50">
           <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-            <FileText size={14} className="text-purple-600" /> Medicines ({rx.medicines.length})
+            <FileText size={14} className="text-purple-600" /> Medicines ({medicinesList.length})
           </span>
           <span className="text-xs font-mono font-semibold text-slate-500">Rx Sheet</span>
         </div>
@@ -177,7 +189,7 @@ export default function PrescriptionDetail() {
               </tr>
             </thead>
             <tbody>
-              {rx.medicines.map((m, i) => (
+              {medicinesList.map((m, i) => (
                 <tr key={i} className="hover:bg-slate-50">
                   <td className="text-slate-400 font-mono text-xs py-2 px-3">{i + 1}</td>
                   <td className="py-2 px-3">
