@@ -39,8 +39,8 @@ export default function NewPrescription() {
 
   /* ── Medicines state with inline table row editing ── */
   const [medicines, setMedicines] = useState([
-    { name: 'ASPIRIN', strength: '75 MG', dosage: '1 tablet', frequency: 'Once Daily', duration: '30', durationUnit: 'Days', route: 'Oral', instructions: 'After food' },
-    { name: 'ATORVASTATIN', strength: '20 MG', dosage: '1 tablet', frequency: 'At Bedtime', duration: '30', durationUnit: 'Days', route: 'Oral', instructions: 'At bedtime' },
+    { name: 'Aspirin', strength: '75 mg', dosage: '1 tablet', frequency: 'Once Daily', duration: '30', durationUnit: 'Days', route: 'Oral', instructions: 'After food' },
+    { name: 'Atorvastatin', strength: '20 mg', dosage: '1 tablet', frequency: 'At Bedtime', duration: '30', durationUnit: 'Days', route: 'Oral', instructions: 'At bedtime' },
   ]);
 
   // Index of row currently being edited inline, or 'new' for a newly added row
@@ -329,7 +329,7 @@ export default function NewPrescription() {
                         <div className="relative">
                           <input
                             type="text"
-                            className="form-input text-xs font-semibold uppercase"
+                            className="form-input text-xs font-semibold"
                             placeholder="Type or select medicine..."
                             value={rowDraft.name}
                             onChange={e => {
@@ -452,7 +452,7 @@ export default function NewPrescription() {
                   <tr key={i} className="hover:bg-slate-50/80 transition-colors">
                     <td className="py-3 px-3 font-medium text-slate-400">{i + 1}</td>
                     <td className="py-3 px-3">
-                      <p className="font-bold text-slate-900 text-xs uppercase">{m.name}</p>
+                      <p className="font-semibold text-slate-900 text-xs">{m.name}</p>
                       <p className="text-[11px] text-slate-500">{m.strength || 'Standard'}</p>
                     </td>
                     <td className="py-3 px-3 text-slate-700">{m.dosage}</td>

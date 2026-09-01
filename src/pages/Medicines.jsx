@@ -30,7 +30,7 @@ export default function Medicines() {
 
     const newMed = {
       id: `MED-00${medicineList.length + 1}`,
-      name: newRowData.name.toUpperCase(),
+      name: newRowData.name,
       strength: newRowData.strength || 'Standard',
       form: newRowData.form,
       category: newRowData.category || 'General',
@@ -103,7 +103,7 @@ export default function Medicines() {
                   <td>
                     <input
                       type="text"
-                      className="form-input text-xs font-semibold uppercase"
+                      className="form-input text-xs font-semibold"
                       placeholder="Medicine Name *"
                       value={newRowData.name}
                       onChange={e => setNewRowData(d => ({ ...d, name: e.target.value }))}
