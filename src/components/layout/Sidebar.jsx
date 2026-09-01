@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, Users, FileText, Pill, BookTemplate,
+  LayoutDashboard, Users, FileText, Pill,
   Stethoscope, BarChart3, Settings, ChevronLeft, ChevronRight,
   Menu, X, LogOut, Bell, Shield
 } from 'lucide-react';
@@ -12,7 +12,6 @@ const navItems = [
   { path: '/patients', icon: Users, label: 'Patients' },
   { path: '/prescriptions', icon: FileText, label: 'Prescriptions' },
   { path: '/medicines', icon: Pill, label: 'Medicines' },
-  { path: '/templates', icon: BookTemplate, label: 'Templates' },
   { path: '/doctors', icon: Stethoscope, label: 'Doctors & Staff' },
   { path: '/reports', icon: BarChart3, label: 'Reports' },
   { path: '/settings', icon: Settings, label: 'Settings' },

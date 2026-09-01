@@ -7,7 +7,6 @@ import {
 import { patients } from '../data/patients';
 import { medicines as medicineList, frequencyOptions, routeOptions, durationUnits } from '../data/medicines';
 import { currentDoctor } from '../data/doctors';
-import { templates } from '../data/templates';
 
 const newMedicineDefault = {
   name: '', strength: '', dosage: '', frequency: 'Once Daily',
@@ -104,22 +103,6 @@ export default function NewPrescription() {
       <div className="page-header mb-0">
         <h1 className="page-title">Create New Prescription</h1>
         <p className="page-subtitle">Fill in the clinical details to generate a prescription</p>
-      </div>
-
-      {/* Quick Templates */}
-      <div className="card p-4">
-        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Use a Template</p>
-        <div className="flex flex-wrap gap-2">
-          {templates.map(t => (
-            <button
-              key={t.id}
-              onClick={() => handleUseTemplate(t)}
-              className="px-3 py-1.5 text-xs font-medium bg-primary-50 text-primary-900 border border-primary-200 rounded-lg hover:bg-primary-100 transition-colors"
-            >
-              {t.name} ({t.medicineCount})
-            </button>
-          ))}
-        </div>
       </div>
 
       {/* Patient Selector */}

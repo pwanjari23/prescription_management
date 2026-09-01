@@ -11,7 +11,6 @@ import NewPrescription from './pages/NewPrescription';
 import PrescriptionDetail from './pages/PrescriptionDetail';
 import PrescriptionPreview from './pages/PrescriptionPreview';
 import Medicines from './pages/Medicines';
-import Templates from './pages/Templates';
 import Doctors from './pages/Doctors';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
@@ -34,7 +33,6 @@ export default function App() {
           <Route path="/prescriptions/:id" element={<PrescriptionDetail />} />
           <Route path="/prescriptions/:id/preview" element={<PrescriptionPreview />} />
           <Route path="/medicines" element={<Medicines />} />
-          <Route path="/templates" element={<Templates />} />
           <Route path="/doctors" element={<Doctors />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/settings" element={<Settings />} />
