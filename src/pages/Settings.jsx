@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { User, Building2, FileText, Shield, CheckCircle } from 'lucide-react';
+import { User, Building2, FileText, Shield, CheckCircle, Sparkles, Cpu, Layers, Lock, CreditCard, MessageSquare, Database } from 'lucide-react';
 import { currentDoctor } from '../data/doctors';
 
 const sections = [
@@ -7,6 +7,7 @@ const sections = [
   { id: 'clinic', label: 'Clinic', icon: Building2 },
   { id: 'prescription', label: 'Prescription', icon: FileText },
   { id: 'account', label: 'Account & Security', icon: Shield },
+  { id: 'roadmap', label: 'Enterprise & Roadmap', icon: Sparkles },
 ];
 
 export default function Settings() {
@@ -22,8 +23,8 @@ export default function Settings() {
   return (
     <div className="space-y-5">
       <div className="page-header">
-        <h1 className="page-title">Settings</h1>
-        <p className="page-subtitle">Configure your profile, clinic details, and preferences</p>
+        <h1 className="page-title">Settings & Enterprise Options</h1>
+        <p className="page-subtitle">Configure your profile, clinic details, and view enterprise SaaS roadmap</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
@@ -43,7 +44,7 @@ export default function Settings() {
                   key={id}
                   onClick={() => setActiveSection(id)}
                   className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-left transition-all ${
-                    activeSection === id ? 'bg-primary-50 text-primary-900' : 'text-slate-600 hover:bg-slate-50'
+                    activeSection === id ? 'bg-primary-50 text-primary-900 font-bold' : 'text-slate-600 hover:bg-slate-50'
                   }`}
                 >
                   <Icon size={16} />
@@ -197,16 +198,91 @@ export default function Settings() {
                     ))}
                   </div>
                 </div>
-                <div>
-                  <p className="text-xs text-slate-400">Last login: Today at 09:00 AM from 192.168.x.x (Nagpur, India)</p>
-                </div>
               </div>
             </>
           )}
 
-          <div className="flex justify-end pt-4 border-t border-slate-100">
-            <button onClick={handleSave} className="btn-primary">Save Changes</button>
-          </div>
+          {activeSection === 'roadmap' && (
+            <div className="space-y-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Sparkles className="text-amber-500" size={20} />
+                  <h2 className="text-base font-bold text-slate-900">Enterprise SaaS Architecture & Roadmap</h2>
+                </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  Future enterprise extensions documented for multi-branch clinic deployments and commercial SaaS scaling.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+                <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                  <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
+                    <Building2 size={15} className="text-blue-600" /> Clinic Operations
+                  </div>
+                  <p className="text-[11px] text-slate-500 leading-relaxed">
+                    Online Appointment Booking, Token & Queue Management, Receptionist Dashboard, Multi-doctor & Multi-branch Clinic Management.
+                  </p>
+                  <span className="inline-block text-[9px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">Planned v2.0</span>
+                </div>
+
+                <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                  <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
+                    <CreditCard size={15} className="text-emerald-600" /> Financial & Billing
+                  </div>
+                  <p className="text-[11px] text-slate-500 leading-relaxed">
+                    OPD Billing, Invoice Generation, Payment Tracking (UPI/Cards), Daily Expense Management, and Financial Audit Logs.
+                  </p>
+                  <span className="inline-block text-[9px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">Planned v2.0</span>
+                </div>
+
+                <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                  <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
+                    <MessageSquare size={15} className="text-purple-600" /> Patient Services & Reminders
+                  </div>
+                  <p className="text-[11px] text-slate-500 leading-relaxed">
+                    Patient Portal access, Digital Prescription Delivery, Lab Reports Storage, Automated SMS & WhatsApp Follow-up Reminders.
+                  </p>
+                  <span className="inline-block text-[9px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-100">Planned v2.1</span>
+                </div>
+
+                <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                  <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
+                    <Cpu size={15} className="text-indigo-600" /> Clinical Intelligence & AI
+                  </div>
+                  <p className="text-[11px] text-slate-500 leading-relaxed">
+                    AI-assisted Clinical Notes summarization, Smart Drug Interaction alerts, Advanced Analytics, and Clinical Reporting.
+                  </p>
+                  <span className="inline-block text-[9px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">Planned v2.2</span>
+                </div>
+
+                <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                  <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
+                    <Database size={15} className="text-amber-600" /> ABDM / ABHA Healthcare Integrations
+                  </div>
+                  <p className="text-[11px] text-slate-500 leading-relaxed">
+                    ABHA (Ayushman Bharat Health Account) linking, ABDM health record exchange, Pharmacy & External Laboratory API connectors.
+                  </p>
+                  <span className="inline-block text-[9px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-100">Planned v2.5</span>
+                </div>
+
+                <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                  <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
+                    <Lock size={15} className="text-rose-600" /> Security & Enterprise Compliance
+                  </div>
+                  <p className="text-[11px] text-slate-500 leading-relaxed">
+                    Advanced Role-Based Access Control (RBAC), Comprehensive Audit Trail Logs, HIPAA-compliant encryption, and automated cloud backups.
+                  </p>
+                  <span className="inline-block text-[9px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-100">Enterprise Edition</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeSection !== 'roadmap' && (
+            <div className="flex justify-end pt-4 border-t border-slate-100">
+              <button onClick={handleSave} className="btn-primary">Save Changes</button>
+            </div>
+          )}
         </div>
       </div>
     </div>
