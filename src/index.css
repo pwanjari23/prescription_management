@@ -16,51 +16,9 @@
   }
 
   body {
-    @apply bg-slate-50 text-slate-900 transition-colors duration-200;
+    @apply bg-slate-50 text-slate-900;
     margin: 0;
     padding: 0;
-  }
-
-  html.dark body {
-    @apply bg-slate-950 text-slate-100;
-  }
-
-  html.dark .card {
-    @apply bg-slate-900 border-slate-800 text-slate-100 shadow-none;
-  }
-
-  html.dark header, html.dark aside {
-    @apply bg-slate-900 border-slate-800 text-slate-100;
-  }
-
-  html.dark .page-title {
-    @apply text-slate-100;
-  }
-
-  html.dark .page-subtitle {
-    @apply text-slate-400;
-  }
-
-  html.dark .form-input,
-  html.dark .form-select,
-  html.dark .form-textarea {
-    @apply bg-slate-800 text-slate-100 border-slate-700 placeholder:text-slate-500 focus:border-primary-500;
-  }
-
-  html.dark .btn-secondary {
-    @apply bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700 hover:text-white;
-  }
-
-  html.dark .data-table thead {
-    @apply bg-slate-800/80 border-slate-700 text-slate-300;
-  }
-
-  html.dark .data-table td {
-    @apply border-slate-800 text-slate-300;
-  }
-
-  html.dark .data-table tbody tr {
-    @apply hover:bg-slate-800/50;
   }
 
   ::-webkit-scrollbar {

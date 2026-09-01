@@ -128,17 +128,17 @@ export default function PrescriptionPreview() {
   return (
     <div className="space-y-4 w-full">
       {/* ── TOP ACTION BAR (Hidden on Print) ─────────────────────────────────── */}
-      <div className="no-print flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+      <div className="no-print flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300 hover:text-slate-900 transition-colors font-semibold"
+            className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors font-semibold"
           >
             <ArrowLeft size={16} /> Back
           </button>
-          <div className="h-4 w-px bg-slate-200 dark:bg-slate-700" />
-          <span className="text-sm font-bold text-slate-900 dark:text-slate-100 font-mono">{rxId}</span>
-          <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-900">
+          <div className="h-4 w-px bg-slate-200" />
+          <span className="text-sm font-bold text-slate-900 font-mono">{rxId}</span>
+          <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
             {rx.status || 'Finalized'}
           </span>
         </div>
