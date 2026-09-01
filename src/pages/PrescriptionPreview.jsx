@@ -66,8 +66,9 @@ export default function PrescriptionPreview() {
   const printRef = useRef(null);
   const [downloading, setDownloading] = useState(false);
 
-  const rx = prescriptions.find(p => p.id === id) || prescriptions[0];
-  const patient = patients.find(p => p.id === rx.patientId) || patients[0];
+  const cleanId = id ? decodeURIComponent(id).trim().replace(/[\s_]/g, '-') : '';
+  const rx = mockPrescriptions.find(p => p.id === id || p.id === cleanId || p.id.replace(/[\s_]/g, '-') === cleanId) || mockPrescriptions[0];
+  const patient = mockPatients.find(p => p.id === rx.patientId) || mockPatients[0];
 
   /* ── PDF Download via html2canvas + jspdf ── */
   const handleDownloadPDF = async () => {

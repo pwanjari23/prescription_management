@@ -19,7 +19,8 @@ export default function PrescriptionDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const rx = mockPrescriptions.find(p => p.id === id) || mockPrescriptions[0];
+  const cleanId = id ? decodeURIComponent(id).trim().replace(/[\s_]/g, '-') : '';
+  const rx = mockPrescriptions.find(p => p.id === id || p.id === cleanId || p.id.replace(/[\s_]/g, '-') === cleanId) || mockPrescriptions[0];
   const patient = mockPatients.find(p => p.id === rx.patientId) || mockPatients[0];
 
   return (
