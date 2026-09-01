@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Eye, User, Stethoscope, Activity, FileText } from 'lucide-react';
 import { mockPrescriptions, mockPatients, currentDoctor } from '../data/mockData';
 
