@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Plus, Eye, Share2, Repeat, Stethoscope, Activity,
   Heart, FileText, Calendar, AlertTriangle, Phone, Mail, MapPin,
-  Download, Droplets, Clock, Pill, CheckCircle2, ChevronRight
+  Download, Droplets, Clock, Pill, CheckCircle2, ChevronRight, History
 } from 'lucide-react';
 import { mockPatients, mockConsultations, mockPrescriptions, currentDoctor } from '../data/mockData';
 
@@ -16,18 +16,21 @@ export default function PatientProfile() {
   const cleanId = rawId.replace(/[\s_]/g, '-');
 
   const patient = mockPatients.find(p => p && (p.id === rawId || p.id === cleanId || (p.id && p.id.replace(/[\s_]/g, '-') === cleanId))) || mockPatients[0] || {};
-  const patientPrescriptions = mockPrescriptions.filter(rx => rx.patientId === patient.id);
-  const patientConsultations = mockConsultations.filter(c => c.patientId === patient.id);
-
-  // Expanded clinical timeline entries
-  const timelineEntries = [
+  
+  // Find all prescriptions for this patient in mockPrescriptions
+  const rawPatientPrescriptions = mockPrescriptions.filter(rx => rx && (rx.patientId === patient.id || rx.patientName === patient.name));
+  
+  // Synthesize/Ensure rich prescription history for patient
+  const displayPrescriptions = rawPatientPrescriptions.length > 0 ? rawPatientPrescriptions : [
     {
       id: 'RX-2026-00128',
-      date: '01 Sep 2026',
+      patientId: patient.id,
+      patientName: patient.name,
+      doctorName: patient.doctor || 'Dr. Pradeep Patil',
+      date: patient.lastVisit || '2026-09-01',
       time: '11:42 AM',
-      type: 'OPD Consultation',
-      doctor: patient.doctor || 'Dr. Pradeep Patil',
-      complaint: 'Chest discomfort on exertion, mild breathlessness',
+      status: 'Finalized',
+      chiefComplaint: 'Chest discomfort on exertion, mild breathlessness',
       diagnosis: 'Stable Angina, Stage 1 Hypertension',
       vitals: { bp: '132/86', pulse: '74', spo2: '97%', temp: '98.6°F' },
       medicines: [
@@ -37,15 +40,16 @@ export default function PatientProfile() {
       ],
       advice: 'Avoid strenuous exertion. Low salt and low lipid diet. Walk 30 minutes daily.',
       followUp: '30 Days (30 Sep 2026)',
-      status: 'Finalized',
     },
     {
       id: 'RX-2026-00115',
-      date: '15 Aug 2026',
+      patientId: patient.id,
+      patientName: patient.name,
+      doctorName: patient.doctor || 'Dr. Pradeep Patil',
+      date: '2026-08-15',
       time: '10:15 AM',
-      type: 'Follow-up Visit',
-      doctor: patient.doctor || 'Dr. Pradeep Patil',
-      complaint: 'Routine blood pressure review & medication refill',
+      status: 'Finalized',
+      chiefComplaint: 'Routine blood pressure review & medication refill',
       diagnosis: 'Essential Hypertension (Controlled)',
       vitals: { bp: '124/80', pulse: '72', spo2: '98%', temp: '98.4°F' },
       medicines: [
@@ -54,15 +58,16 @@ export default function PatientProfile() {
       ],
       advice: 'Continue regular exercise and BP logging twice weekly.',
       followUp: '15 Days (31 Aug 2026)',
-      status: 'Finalized',
     },
     {
       id: 'RX-2026-00098',
-      date: '02 Jun 2026',
+      patientId: patient.id,
+      patientName: patient.name,
+      doctorName: 'Dr. Rahul Sharma',
+      date: '2026-06-02',
       time: '04:30 PM',
-      type: 'Emergency Consultation',
-      doctor: 'Dr. Rahul Sharma',
-      complaint: 'Acute viral fever, headache, body pain',
+      status: 'Finalized',
+      chiefComplaint: 'Acute viral fever, headache, body pain',
       diagnosis: 'Acute Viral Pyrexia & Dehydration',
       vitals: { bp: '118/76', pulse: '88', spo2: '98%', temp: '101.2°F' },
       medicines: [
@@ -71,9 +76,24 @@ export default function PatientProfile() {
       ],
       advice: 'Drink warm fluids, rest for 3 days.',
       followUp: '7 Days',
-      status: 'Finalized',
     },
   ];
+
+  // Timeline entry generator
+  const timelineEntries = displayPrescriptions.map(rx => ({
+    id: rx.id,
+    date: rx.date,
+    time: rx.time || '11:00 AM',
+    type: 'Consultation & Prescription',
+    doctor: rx.doctorName || patient.doctor || 'Dr. Pradeep Patil',
+    complaint: rx.chiefComplaint || 'Routine medical review',
+    diagnosis: rx.diagnosis || 'Cardiology Consultation',
+    vitals: rx.vitals || { bp: '120/80', pulse: '72' },
+    medicines: rx.medicines || [],
+    advice: rx.advice || 'Take rest and regular medication.',
+    followUp: rx.followUp ? `${rx.followUp} ${rx.followUpUnit || 'Days'}` : 'As Needed',
+    status: rx.status || 'Finalized',
+  }));
 
   const filteredTimeline = timelineEntries.filter(item => {
     if (filterTab === 'Prescriptions') return item.medicines && item.medicines.length > 0;
@@ -104,7 +124,7 @@ export default function PatientProfile() {
         </button>
       </div>
 
-      {/* Patient Header Card (Includes Blood Group, Allergies & Status Tags) */}
+      {/* Patient Header Card */}
       <div className="card p-5">
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
           <div className="flex items-start gap-4">
@@ -158,8 +178,43 @@ export default function PatientProfile() {
 
       {/* Main Layout Grid: Clinical Summary Sidebar + Timeline */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* Left Column: Patient Clinical Profile */}
+        {/* Left Column: Patient Clinical Profile & Quick Past Prescriptions */}
         <div className="space-y-4">
+          {/* Past Prescriptions Drawer Widget */}
+          <div className="card p-4">
+            <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <History size={14} className="text-primary-900" /> Past Prescriptions ({displayPrescriptions.length})
+              </span>
+              <span className="text-[10px] bg-primary-50 text-primary-900 font-bold px-2 py-0.5 rounded-full">History</span>
+            </h3>
+            <div className="space-y-2.5">
+              {displayPrescriptions.map((rxItem) => (
+                <div
+                  key={rxItem.id}
+                  onClick={() => navigate(`/prescriptions/${rxItem.id}`)}
+                  className="p-2.5 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-200/80 cursor-pointer transition-all space-y-1.5 group"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-xs font-bold text-primary-900 group-hover:underline">
+                      {rxItem.id}
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-medium">{rxItem.date}</span>
+                  </div>
+                  <p className="text-xs font-semibold text-slate-800 line-clamp-1">
+                    {rxItem.diagnosis || 'Cardiology Consult'}
+                  </p>
+                  <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1 border-t border-slate-200/50">
+                    <span>{rxItem.medicines?.length || 0} Medicines</span>
+                    <span className="text-primary-900 font-semibold flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform">
+                      View <ChevronRight size={12} />
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* Chronic Conditions */}
           <div className="card p-4">
             <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
@@ -211,12 +266,12 @@ export default function PatientProfile() {
           </div>
         </div>
 
-        {/* Right Column: Medical History Timeline */}
+        {/* Right Column: Medical History Timeline & Old Prescriptions */}
         <div className="lg:col-span-2 card p-5 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
             <div>
-              <h2 className="text-base font-bold text-slate-900">Medical History &amp; Consultations</h2>
-              <p className="text-xs text-slate-500">Timeline of clinical visits, diagnoses, and past prescriptions</p>
+              <h2 className="text-base font-bold text-slate-900">Medical History &amp; Prescriptions Timeline</h2>
+              <p className="text-xs text-slate-500">Historical consultations, old prescriptions, and medical records</p>
             </div>
 
             {/* Filter Tabs */}
@@ -251,11 +306,11 @@ export default function PatientProfile() {
                   {/* Top Visit Row */}
                   <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/60 pb-2.5">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold font-mono bg-white px-2.5 py-0.5 rounded border border-slate-200 text-slate-900">
-                        {item.date} · {item.time}
+                      <span className="text-xs font-bold font-mono bg-white px-2.5 py-0.5 rounded border border-slate-200 text-primary-900">
+                        {item.id}
                       </span>
-                      <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-primary-50 text-primary-900 border border-primary-100">
-                        {item.type}
+                      <span className="text-xs text-slate-500 font-mono">
+                        {item.date} · {item.time}
                       </span>
                     </div>
                     <span className="text-xs text-slate-600 font-semibold flex items-center gap-1">
@@ -279,18 +334,25 @@ export default function PatientProfile() {
                   {item.vitals && (
                     <div className="flex flex-wrap gap-2 items-center text-xs">
                       <span className="text-[10px] font-bold text-slate-400 uppercase">Vitals:</span>
-                      <span className="px-2 py-0.5 bg-white border border-slate-200 rounded font-mono text-[11px] font-semibold text-slate-800">
-                        BP: {item.vitals.bp}
-                      </span>
-                      <span className="px-2 py-0.5 bg-white border border-slate-200 rounded font-mono text-[11px] font-semibold text-slate-800">
-                        Pulse: {item.vitals.pulse}
-                      </span>
-                      <span className="px-2 py-0.5 bg-white border border-slate-200 rounded font-mono text-[11px] font-semibold text-slate-800">
-                        SpO₂: {item.vitals.spo2}
-                      </span>
-                      <span className="px-2 py-0.5 bg-white border border-slate-200 rounded font-mono text-[11px] font-semibold text-slate-800">
-                        Temp: {item.vitals.temp}
-                      </span>
+                      {typeof item.vitals === 'object' ? (
+                        <>
+                          <span className="px-2 py-0.5 bg-white border border-slate-200 rounded font-mono text-[11px] font-semibold text-slate-800">
+                            BP: {item.vitals.bp}
+                          </span>
+                          <span className="px-2 py-0.5 bg-white border border-slate-200 rounded font-mono text-[11px] font-semibold text-slate-800">
+                            Pulse: {item.vitals.pulse}
+                          </span>
+                          {item.vitals.spo2 && (
+                            <span className="px-2 py-0.5 bg-white border border-slate-200 rounded font-mono text-[11px] font-semibold text-slate-800">
+                              SpO₂: {item.vitals.spo2}
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        <span className="px-2 py-0.5 bg-white border border-slate-200 rounded font-mono text-[11px] font-semibold text-slate-800">
+                          {item.vitals}
+                        </span>
+                      )}
                     </div>
                   )}
 
@@ -321,7 +383,7 @@ export default function PatientProfile() {
                     <span className="text-xs text-slate-500">
                       Follow-up: <strong className="text-slate-800">{item.followUp}</strong>
                     </span>
-                    <div className="flex gap-2">
+                    <div className="flex items-center gap-2">
                       <button
                         onClick={() => navigate(`/prescriptions/new?patient=${patientId}&repeat=${item.id}`)}
                         className="btn-secondary btn-sm py-1 flex items-center gap-1"
@@ -330,10 +392,18 @@ export default function PatientProfile() {
                         <Repeat size={13} /> Repeat Rx
                       </button>
                       <button
+                        onClick={() => navigate(`/prescriptions/${item.id}`)}
+                        className="btn-secondary btn-sm py-1 flex items-center gap-1"
+                        title="View prescription details"
+                      >
+                        <Eye size={13} /> Details
+                      </button>
+                      <button
                         onClick={() => navigate(`/prescriptions/${item.id}/preview`)}
                         className="btn-primary btn-sm py-1 flex items-center gap-1"
+                        title="View printable sheet"
                       >
-                        <Eye size={13} /> View Sheet
+                        <FileText size={13} /> Printable Sheet
                       </button>
                     </div>
                   </div>
