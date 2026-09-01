@@ -24,49 +24,64 @@ export default function NewPrescription() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const patientParamId = searchParams.get('patient');
+  const repeatParamId = searchParams.get('repeat');
+
+  const repeatRx = mockPrescriptions.find(r => r.id === repeatParamId);
 
   const [selectedPatient, setSelectedPatient] = useState(
-    mockPatients.find(p => p.id === patientParamId) || mockPatients[0]
+    mockPatients.find(p => p.id === (repeatRx?.patientId || patientParamId)) || mockPatients[0]
   );
   const [showPatientDropdown, setShowPatientDropdown] = useState(false);
   const [patientSearch, setPatientSearch] = useState('');
 
   const [form, setForm] = useState({
-    chiefComplaint: 'Fever, headache, and mild body ache for 2 days',
-    diagnosis: 'Viral Fever, Mild Dehydration',
-    bp: '120/80',
-    pulse: '78',
-    spo2: '98',
-    temp: '100.2',
-    advice: 'Take rest, drink plenty of warm water, avoid cold items. Review if fever persists after 3 days.',
-    followUp: '5',
-    followUpUnit: 'Days',
+    chiefComplaint: repeatRx?.chiefComplaint || 'Fever, headache, and mild body ache for 2 days',
+    diagnosis: repeatRx?.diagnosis || 'Viral Fever, Mild Dehydration',
+    bp: repeatRx?.vitals?.bp || '120/80',
+    pulse: repeatRx?.vitals?.pulse || '78',
+    spo2: repeatRx?.vitals?.spo2 || '98',
+    temp: repeatRx?.vitals?.temp || '100.2',
+    advice: repeatRx?.advice || 'Take rest, drink plenty of warm water, avoid cold items. Review if fever persists after 3 days.',
+    followUp: repeatRx?.followUp || '5',
+    followUpUnit: repeatRx?.followUpUnit || 'Days',
   });
 
-  const [medicines, setMedicines] = useState([
-    {
-      name: 'Paracetamol',
-      strength: '500mg',
-      dosage: '1 tablet',
-      frequency: '1-0-1',
-      duration: '5',
-      durationUnit: 'Days',
-      route: 'Oral',
-      foodTiming: 'After food',
-      instructions: 'Take with water after meals',
-    },
-    {
-      name: 'Pantoprazole',
-      strength: '40mg',
-      dosage: '1 tablet',
-      frequency: '1-0-0',
-      duration: '7',
-      durationUnit: 'Days',
-      route: 'Oral',
-      foodTiming: 'Before food',
-      instructions: 'Take 30 minutes before breakfast',
-    },
-  ]);
+  const [medicines, setMedicines] = useState(
+    repeatRx?.medicines ? repeatRx.medicines.map(m => ({
+      name: m.name,
+      strength: m.strength || '',
+      dosage: m.dosage || '1 tablet',
+      frequency: m.frequency || '1-0-1',
+      duration: m.duration || '5',
+      durationUnit: m.durationUnit || 'Days',
+      route: m.route || 'Oral',
+      foodTiming: m.foodTiming || 'After food',
+      instructions: m.instructions || 'Take with water',
+    })) : [
+      {
+        name: 'Paracetamol',
+        strength: '500mg',
+        dosage: '1 tablet',
+        frequency: '1-0-1',
+        duration: '5',
+        durationUnit: 'Days',
+        route: 'Oral',
+        foodTiming: 'After food',
+        instructions: 'Take with water after meals',
+      },
+      {
+        name: 'Pantoprazole',
+        strength: '40mg',
+        dosage: '1 tablet',
+        frequency: '1-0-0',
+        duration: '7',
+        durationUnit: 'Days',
+        route: 'Oral',
+        foodTiming: 'Before food',
+        instructions: 'Take 30 minutes before breakfast',
+      },
+    ]
+  );
 
   const [editingRowIndex, setEditingRowIndex] = useState(null);
   const [rowDraft, setRowDraft] = useState({ ...emptyRowDefault });

@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Printer, Download, Edit, Loader2 } from 'lucide-react';
+import { ArrowLeft, Printer, Download, Edit, Loader2, Share2, Repeat } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { mockPrescriptions, mockPatients, currentDoctor } from '../data/mockData';
 
@@ -89,6 +89,11 @@ export default function PrescriptionPreview() {
   const patientAllergies = Array.isArray(patient.allergies) ? patient.allergies : [];
   const medicinesList = Array.isArray(rx.medicines) ? rx.medicines : [];
 
+  const handleShareWhatsApp = () => {
+    const text = `Dear ${patientName}, your prescription (${rxId}) from Shree Swami Samarth Hospital by ${currentDoctor.name} is ready. Follow-up: ${rx.followUp || 30} days. Preview: https://prescription-management-zeta.vercel.app/prescriptions/${rxId}/preview`;
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+  };
+
   /* ── PDF Download via html2canvas + jspdf ── */
   const handleDownloadPDF = async () => {
     setDownloading(true);
@@ -123,28 +128,40 @@ export default function PrescriptionPreview() {
   return (
     <div className="space-y-4 w-full">
       {/* ── TOP ACTION BAR (Hidden on Print) ─────────────────────────────────── */}
-      <div className="no-print flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+      <div className="no-print flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors font-semibold"
+            className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300 hover:text-slate-900 transition-colors font-semibold"
           >
             <ArrowLeft size={16} /> Back
           </button>
-          <div className="h-4 w-px bg-slate-200" />
-          <span className="text-sm font-bold text-slate-900 font-mono">{rxId}</span>
-          <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+          <div className="h-4 w-px bg-slate-200 dark:bg-slate-700" />
+          <span className="text-sm font-bold text-slate-900 dark:text-slate-100 font-mono">{rxId}</span>
+          <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-900">
             {rx.status || 'Finalized'}
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* WhatsApp Share */}
           <button
-            onClick={() => navigate(`/prescriptions/new?patient=${patient.id || 'PT-00124'}`)}
-            className="btn-secondary btn-sm"
+            onClick={handleShareWhatsApp}
+            className="btn-secondary btn-sm bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600 flex items-center gap-1.5"
+            title="Share Prescription link via WhatsApp"
           >
-            <Edit size={14} /> New Rx
+            <Share2 size={14} /> WhatsApp Share
           </button>
+
+          {/* Repeat Rx */}
+          <button
+            onClick={() => navigate(`/prescriptions/new?patient=${patient.id || 'PT-00124'}&repeat=${rxId}`)}
+            className="btn-secondary btn-sm flex items-center gap-1.5"
+            title="Pre-fill form with this prescription to repeat/renew"
+          >
+            <Repeat size={14} /> Repeat Rx
+          </button>
+
           <button onClick={() => window.print()} className="btn-secondary btn-sm">
             <Printer size={14} /> Print
           </button>
