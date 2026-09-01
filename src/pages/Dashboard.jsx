@@ -45,7 +45,7 @@ export default function Dashboard() {
   ];
 
   const quickActions = [
-    { label: 'New Patient', icon: UserPlus, color: 'bg-primary-900 text-white hover:bg-primary-800', path: '/patients/new' },
+    { label: 'New Patient', icon: UserPlus, color: 'bg-primary-900 text-white hover:bg-primary-800', path: '/patients' },
     { label: 'New Prescription', icon: FilePlus, color: 'bg-teal-700 text-white hover:bg-teal-800', path: '/prescriptions/new' },
     { label: 'Search Patient', icon: Search, color: 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200', path: '/patients' },
     { label: 'View Appointments', icon: Calendar, color: 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200', path: '/patients' },
