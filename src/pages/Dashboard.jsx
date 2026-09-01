@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import {
   Users, FileText, Calendar, TrendingUp, TrendingDown,
   Search, Eye, Clock, UserPlus, FilePlus, ArrowRight,
-  Activity, CalendarClock, Stethoscope, CheckCircle, AlertCircle
+  Activity, CalendarClock, Stethoscope, CheckCircle, AlertCircle,
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { currentDoctor } from '../data/doctors';
 import { mockPatients, mockAppointments, mockFollowUps, mockPrescriptions } from '../data/mockData';
@@ -51,6 +52,14 @@ const AppointmentStatusBadge = ({ status }) => {
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
+  const totalPages = Math.ceil(mockAppointments.length / itemsPerPage);
+  const paginatedAppointments = mockAppointments.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   const stats = [
     { label: "Total Patients", value: "128", trend: "+3.2%", positive: true, icon: Users, color: "text-purple-700", iconBg: "bg-purple-50" },
@@ -152,7 +161,7 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {mockAppointments.map((apt) => (
+                {paginatedAppointments.map((apt) => (
                   <tr key={apt.id} className="hover:bg-slate-50 transition-colors">
                     <td>
                       <div className="flex items-center gap-2.5">
@@ -214,6 +223,36 @@ export default function Dashboard() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Controls */}
+          {mockAppointments.length > itemsPerPage && (
+            <div className="px-5 py-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 bg-slate-50/50">
+              <span>
+                Showing <strong>{(currentPage - 1) * itemsPerPage + 1}</strong> to{' '}
+                <strong>{Math.min(currentPage * itemsPerPage, mockAppointments.length)}</strong> of{' '}
+                <strong>{mockAppointments.length}</strong> patients
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 flex items-center gap-1 font-semibold transition-all shadow-2xs"
+                >
+                  <ChevronLeft size={14} /> Prev
+                </button>
+                <span className="font-semibold text-slate-700 px-2.5 py-1 bg-white border border-slate-200 rounded-md">
+                  {currentPage} / {totalPages}
+                </span>
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 flex items-center gap-1 font-semibold transition-all shadow-2xs"
+                >
+                  Next <ChevronRight size={14} />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right Sidebar: Follow-ups Due & Recent Prescriptions */}

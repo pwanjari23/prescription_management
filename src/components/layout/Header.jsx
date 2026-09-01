@@ -21,7 +21,7 @@ export default function Header({ onMobileMenuOpen }) {
       {/* Title */}
       <div className="flex-1 min-w-0">
         <h1 className="text-sm md:text-base font-bold text-slate-800 truncate">
-          Shree Swami Samarth Hospital
+      
         </h1>
       </div>
 
