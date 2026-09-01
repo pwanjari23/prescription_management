@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import Patients from './pages/Patients';
 import PatientProfile from './pages/PatientProfile';
 import AddPatient from './pages/AddPatient';
+import FollowUps from './pages/FollowUps';
 import Prescriptions from './pages/Prescriptions';
 import NewPrescription from './pages/NewPrescription';
 import PrescriptionDetail from './pages/PrescriptionDetail';
@@ -28,6 +29,7 @@ export default function App() {
           <Route path="/patients" element={<Patients />} />
           <Route path="/patients/new" element={<AddPatient />} />
           <Route path="/patients/:id" element={<PatientProfile />} />
+          <Route path="/follow-ups" element={<FollowUps />} />
           <Route path="/prescriptions" element={<Prescriptions />} />
           <Route path="/prescriptions/new" element={<NewPrescription />} />
           <Route path="/prescriptions/:id" element={<PrescriptionDetail />} />

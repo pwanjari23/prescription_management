@@ -1,16 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Eye, Filter, ChevronDown, User, UserPlus, X, CheckCircle } from 'lucide-react';
-import { patients as initialPatients } from '../data/patients';
-import { doctors } from '../data/doctors';
+import { Search, Plus, Eye, User, UserPlus, X, CheckCircle, CalendarClock, Filter } from 'lucide-react';
+import { mockPatients } from '../data/mockData';
 
 export default function Patients() {
   const navigate = useNavigate();
-  const [patientList, setPatientList] = useState(initialPatients);
+  const [patientList, setPatientList] = useState(mockPatients);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterDoctor, setFilterDoctor] = useState('');
-  const [filterGender, setFilterGender] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
+  const [activeFilter, setActiveFilter] = useState('All');
   const [showModal, setShowModal] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
 
@@ -24,7 +21,6 @@ export default function Patients() {
     bloodGroup: 'O+',
     allergies: '',
     existingConditions: '',
-    doctorId: 'DOC-001',
   });
 
   const handleInputChange = (e) => {
@@ -37,28 +33,28 @@ export default function Patients() {
     if (!formData.name || !formData.phone) return;
 
     const newId = `PT-00${124 + patientList.length + 1}`;
-    const selectedDoctor = doctors.find(d => d.id === formData.doctorId) || doctors[0];
-
     const newPatient = {
       id: newId,
       name: formData.name,
       gender: formData.gender,
       age: parseInt(formData.age) || 45,
       phone: formData.phone,
-      email: formData.email || `${formData.name.toLowerCase().replace(/\s+/g, '.')}@gmail.com`,
+      email: formData.email || `${formData.name.toLowerCase().replace(/\s+/g, '.')}@email.com`,
       address: formData.address || 'Nagpur, Maharashtra',
       bloodGroup: formData.bloodGroup,
       allergies: formData.allergies ? formData.allergies.split(',').map(a => a.trim()) : [],
       existingConditions: formData.existingConditions ? formData.existingConditions.split(',').map(c => c.trim()) : ['Hypertension'],
-      doctor: selectedDoctor.name,
-      doctorId: selectedDoctor.id,
-      registeredDate: new Date().toISOString().split('T')[0],
+      currentMedications: [],
+      medicalHistory: 'New patient record added.',
       lastVisit: '2026-09-01',
-      prescriptionsCount: 0,
-      vitalsHistory: [
-        { date: '2026-09-01', bp: '120/80', pulse: '72', temp: '98.6', weight: '68' },
-      ],
-      medicalHistory: 'New patient registered via clinic portal.',
+      nextFollowUp: '2026-09-15',
+      doctor: 'Dr. Pradeep Patil',
+      doctorId: 'D001',
+      prescriptionCount: 0,
+      status: 'Active',
+      patientType: 'New Patient',
+      registeredOn: new Date().toISOString().split('T')[0],
+      notes: 'Initial clinical registration.',
     };
 
     setPatientList(prev => [newPatient, ...prev]);
@@ -66,7 +62,6 @@ export default function Patients() {
     setShowSuccessToast(true);
     setTimeout(() => setShowSuccessToast(false), 3000);
 
-    // Reset form
     setFormData({
       name: '',
       gender: 'Male',
@@ -77,36 +72,52 @@ export default function Patients() {
       bloodGroup: 'O+',
       allergies: '',
       existingConditions: '',
-      doctorId: 'DOC-001',
     });
   };
 
-  const filtered = patientList.filter(p => {
-    const q = searchQuery.toLowerCase();
-    const matchSearch = !q || p.name.toLowerCase().includes(q) || p.id.toLowerCase().includes(q) || p.phone.includes(q);
-    const matchDoctor = !filterDoctor || p.doctorId === filterDoctor;
-    const matchGender = !filterGender || p.gender === filterGender;
-    return matchSearch && matchDoctor && matchGender;
+  // Filter & Search Logic (Frontend Only)
+  const filteredPatients = patientList.filter(p => {
+    const q = searchQuery.toLowerCase().trim();
+    const matchesSearch =
+      !q ||
+      p.name.toLowerCase().includes(q) ||
+      p.id.toLowerCase().includes(q) ||
+      p.phone.includes(q);
+
+    let matchesFilter = true;
+    if (activeFilter === 'New Patients') {
+      matchesFilter = p.patientType === 'New Patient';
+    } else if (activeFilter === 'Returning Patients') {
+      matchesFilter = p.patientType === 'Returning Patient';
+    } else if (activeFilter === 'Follow-up Due') {
+      matchesFilter = p.patientType === 'Follow-up Due';
+    }
+
+    return matchesSearch && matchesFilter;
   });
 
-  const formatDate = (d) => {
-    if (!d) return '—';
-    if (d === '2026-09-01') return 'Today';
-    if (d === '2026-08-31') return 'Yesterday';
-    return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' });
+  const getPatientTypeBadge = (type) => {
+    switch (type) {
+      case 'New Patient':
+        return <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">New Patient</span>;
+      case 'Follow-up Due':
+        return <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">Follow-up Due</span>;
+      default:
+        return <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">Returning Patient</span>;
+    }
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {/* Header & Add Button */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="page-header mb-0">
-          <h1 className="page-title">Patients</h1>
-          <p className="page-subtitle">Manage and access patient information — {patientList.length} total records</p>
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Patient Management</h1>
+          <p className="text-slate-500 text-sm mt-0.5">Manage records, medical histories, and clinical profiles — {patientList.length} total records</p>
         </div>
         <button
           onClick={() => setShowModal(true)}
-          className="btn-primary flex-shrink-0"
+          className="btn-primary flex items-center gap-2 flex-shrink-0"
         >
           <Plus size={16} />
           Add Patient
@@ -115,143 +126,121 @@ export default function Patients() {
 
       {/* Success Toast */}
       {showSuccessToast && (
-        <div className="flex items-center gap-2 p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-sm font-medium animate-fade-in shadow-sm">
+        <div className="flex items-center gap-2 p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-sm font-medium shadow-xs">
           <CheckCircle size={18} className="text-emerald-600 flex-shrink-0" />
           <span>New patient record added successfully!</span>
         </div>
       )}
 
-      {/* Search & Filters */}
+      {/* Search & Category Filter Controls */}
       <div className="card p-4">
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
+        <div className="flex flex-col md:flex-row gap-3 items-center justify-between">
+          {/* Search Box */}
+          <div className="relative w-full md:w-96">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
-              id="patient-search"
+              id="patient-search-input"
               type="text"
-              className="form-input pl-9"
-              placeholder="Search by patient name, ID or mobile number..."
+              className="form-input pl-9 text-xs"
+              placeholder="Search by patient name, ID, or phone number..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
             />
           </div>
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className="btn-secondary flex-shrink-0"
-          >
-            <Filter size={15} />
-            Filters
-            <ChevronDown size={13} className={`transition-transform ${showFilters ? 'rotate-180' : ''}`} />
-          </button>
-        </div>
 
-        {showFilters && (
-          <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-3 gap-4 animate-fade-in">
-            <div>
-              <label className="form-label">Doctor</label>
-              <select
-                className="form-select"
-                value={filterDoctor}
-                onChange={e => setFilterDoctor(e.target.value)}
-              >
-                <option value="">All Doctors</option>
-                {doctors.map(d => (
-                  <option key={d.id} value={d.id}>{d.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="form-label">Gender</label>
-              <select
-                className="form-select"
-                value={filterGender}
-                onChange={e => setFilterGender(e.target.value)}
-              >
-                <option value="">All</option>
-                <option>Male</option>
-                <option>Female</option>
-              </select>
-            </div>
-            <div className="flex items-end">
+          {/* Quick Filters */}
+          <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+            <span className="text-xs text-slate-400 font-medium mr-1 flex items-center gap-1 hidden sm:flex">
+              <Filter size={13} /> Filter:
+            </span>
+            {['All', 'New Patients', 'Returning Patients', 'Follow-up Due'].map(filter => (
               <button
-                onClick={() => { setFilterDoctor(''); setFilterGender(''); setSearchQuery(''); }}
-                className="btn-secondary text-xs"
+                key={filter}
+                onClick={() => setActiveFilter(filter)}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap ${
+                  activeFilter === filter
+                    ? 'bg-primary-900 text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
               >
-                Clear Filters
+                {filter}
               </button>
-            </div>
+            ))}
           </div>
-        )}
+        </div>
       </div>
 
       {/* Patient Table */}
       <div className="card overflow-hidden">
-        {filtered.length === 0 ? (
+        {filteredPatients.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-slate-400">
             <User size={40} className="mb-3 opacity-30" />
-            <p className="text-sm font-medium">No patients found</p>
-            <p className="text-xs mt-1">Try adjusting your search or filters</p>
+            <p className="text-sm font-semibold text-slate-700">No patients found</p>
+            <p className="text-xs mt-1 text-slate-400">Try adjusting your search criteria or clear active filters</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Patient</th>
-                  <th>ID</th>
-                  <th className="hidden sm:table-cell">Age</th>
-                  <th className="hidden md:table-cell">Gender</th>
-                  <th className="hidden lg:table-cell">Conditions</th>
-                  <th className="hidden sm:table-cell">Last Visit</th>
-                  <th>Action</th>
+                  <th>Patient ID</th>
+                  <th>Name</th>
+                  <th>Age / Gender</th>
+                  <th>Phone</th>
+                  <th>Last Visit</th>
+                  <th>Next Follow-up</th>
+                  <th>Status</th>
+                  <th className="text-right">Action</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((p) => (
-                  <tr key={p.id} className="cursor-pointer" onClick={() => navigate(`/patients/${p.id}`)}>
+                {filteredPatients.map((p) => (
+                  <tr
+                    key={p.id}
+                    className="hover:bg-slate-50 cursor-pointer transition-colors"
+                    onClick={() => navigate(`/patients/${p.id}`)}
+                  >
                     <td>
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
+                      <span className="font-mono text-xs font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
+                        {p.id}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
                           <span className="text-primary-900 text-xs font-bold">
                             {p.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
                           </span>
                         </div>
-                        <div>
-                          <p className="font-semibold text-slate-900 text-sm">{p.name}</p>
-                          <p className="text-xs text-slate-400 sm:hidden">{p.id} · {p.gender}</p>
-                        </div>
+                        <span className="font-bold text-slate-900 text-sm">{p.name}</span>
                       </div>
                     </td>
-                    <td><span className="font-mono text-xs text-slate-600">{p.id}</span></td>
-                    <td className="hidden sm:table-cell text-slate-600">{p.age} yrs</td>
-                    <td className="hidden md:table-cell text-slate-600">
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${p.gender === 'Male' ? 'bg-blue-50 text-blue-700' : 'bg-pink-50 text-pink-700'}`}>
-                        {p.gender}
-                      </span>
+                    <td className="text-slate-600 text-xs">
+                      {p.age} yrs · {p.gender}
                     </td>
-                    <td className="hidden lg:table-cell">
-                      <div className="flex flex-wrap gap-1">
-                        {p.existingConditions.slice(0, 2).map(c => (
-                          <span key={c} className="text-[10px] px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded">
-                            {c}
-                          </span>
-                        ))}
-                        {p.existingConditions.length > 2 && (
-                          <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded">
-                            +{p.existingConditions.length - 2}
-                          </span>
-                        )}
-                      </div>
+                    <td className="text-slate-600 text-xs font-mono">
+                      {p.phone}
                     </td>
-                    <td className="hidden sm:table-cell">
-                      <span className="text-xs text-slate-600">{formatDate(p.lastVisit)}</span>
+                    <td className="text-slate-600 text-xs font-medium">
+                      {p.lastVisit || '—'}
                     </td>
-                    <td onClick={e => e.stopPropagation()}>
+                    <td className="text-slate-600 text-xs font-medium">
+                      {p.nextFollowUp ? (
+                        <span className="flex items-center gap-1 text-slate-700">
+                          <CalendarClock size={12} className="text-amber-500" />
+                          {p.nextFollowUp}
+                        </span>
+                      ) : '—'}
+                    </td>
+                    <td>
+                      {getPatientTypeBadge(p.patientType)}
+                    </td>
+                    <td className="text-right" onClick={e => e.stopPropagation()}>
                       <button
                         onClick={() => navigate(`/patients/${p.id}`)}
-                        className="flex items-center gap-1 text-xs font-medium text-primary-900 hover:underline"
+                        className="btn-secondary btn-sm flex items-center gap-1 ml-auto"
                       >
-                        <Eye size={13} /> View
+                        <Eye size={13} /> View Patient
                       </button>
                     </td>
                   </tr>
@@ -262,17 +251,16 @@ export default function Patients() {
         )}
       </div>
 
-      {/* Add Patient Modal Popup */}
+      {/* Add Patient Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-lg shadow-xl animate-fade-in overflow-hidden">
-            {/* Modal Header */}
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center">
                   <UserPlus size={16} className="text-primary-900" />
                 </div>
-                <h3 className="font-semibold text-slate-900 text-base">Add New Patient</h3>
+                <h3 className="font-bold text-slate-900 text-base">Add New Patient</h3>
               </div>
               <button
                 onClick={() => setShowModal(false)}
@@ -282,7 +270,6 @@ export default function Patients() {
               </button>
             </div>
 
-            {/* Modal Form */}
             <form onSubmit={handleAddPatient} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
               <div>
                 <label className="form-label">Full Name <span className="text-red-500">*</span></label>
@@ -383,20 +370,6 @@ export default function Patients() {
                 />
               </div>
 
-              <div>
-                <label className="form-label">Attending Doctor</label>
-                <select
-                  name="doctorId"
-                  className="form-select"
-                  value={formData.doctorId}
-                  onChange={handleInputChange}
-                >
-                  {doctors.map(d => (
-                    <option key={d.id} value={d.id}>{d.name} ({d.specialization})</option>
-                  ))}
-                </select>
-              </div>
-
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="form-label">Drug Allergies</label>
@@ -422,7 +395,6 @@ export default function Patients() {
                 </div>
               </div>
 
-              {/* Modal Actions */}
               <div className="flex gap-3 justify-end pt-4 border-t border-slate-100">
                 <button
                   type="button"

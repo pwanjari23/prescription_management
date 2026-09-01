@@ -3,13 +3,14 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Users, FileText, Pill,
   Stethoscope, BarChart3, Settings, ChevronLeft, ChevronRight,
-  Menu, X, LogOut, Bell, Shield
+  Menu, X, LogOut, Bell, Shield, CalendarClock
 } from 'lucide-react';
 import { currentDoctor } from '../../data/doctors';
 
 const navItems = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/patients', icon: Users, label: 'Patients' },
+  { path: '/follow-ups', icon: CalendarClock, label: 'Follow-ups' },
   { path: '/prescriptions', icon: FileText, label: 'Prescriptions' },
   { path: '/medicines', icon: Pill, label: 'Medicines' },
   { path: '/doctors', icon: Stethoscope, label: 'Doctors & Staff' },

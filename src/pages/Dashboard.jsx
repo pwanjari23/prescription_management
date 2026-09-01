@@ -1,12 +1,12 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Users, FileText, Calendar, TrendingUp, TrendingDown,
-  Plus, Search, Eye, Clock, UserPlus, FilePlus, ArrowRight,
-  Activity
+  Search, Eye, Clock, UserPlus, FilePlus, ArrowRight,
+  Activity, CalendarClock, Stethoscope, CheckCircle, AlertCircle
 } from 'lucide-react';
 import { currentDoctor } from '../data/doctors';
-import { patients } from '../data/patients';
-import { prescriptions } from '../data/prescriptions';
+import { mockPatients, mockAppointments, mockFollowUps, mockPrescriptions } from '../data/mockData';
 
 const getHour = () => new Date().getHours();
 const getGreeting = () => {
@@ -16,161 +16,198 @@ const getGreeting = () => {
   return 'Good Evening';
 };
 
-const StatusBadge = ({ status }) => {
-  const variants = {
-    Finalized: 'badge-finalized',
-    Draft: 'badge-draft',
-    Cancelled: 'badge-cancelled',
-  };
-  const dots = { Finalized: 'bg-emerald-500', Draft: 'bg-slate-400', Cancelled: 'bg-red-500' };
-  return (
-    <span className={`badge ${variants[status] || 'badge-draft'}`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${dots[status] || 'bg-slate-400'}`} />
-      {status}
-    </span>
-  );
+const AppointmentStatusBadge = ({ status }) => {
+  switch (status) {
+    case 'Completed':
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+          <CheckCircle size={11} className="text-emerald-500" />
+          Completed
+        </span>
+      );
+    case 'In Consultation':
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200 animate-pulse">
+          <Stethoscope size={11} className="text-purple-500" />
+          In Consultation
+        </span>
+      );
+    case 'Waiting':
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+          <Clock size={11} className="text-amber-500" />
+          Waiting
+        </span>
+      );
+    default:
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+          <Calendar size={11} className="text-blue-500" />
+          Upcoming
+        </span>
+      );
+  }
 };
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const recentPatients = patients.slice(0, 5);
-  const recentPrescriptions = prescriptions.slice(0, 4);
-  const todayPrescriptions = prescriptions.filter(p => p.date === '2026-09-01').length;
 
   const stats = [
-    { label: "Today's Patients", value: 24, trend: '+12%', positive: true, icon: Users, color: 'bg-blue-50 text-blue-700', iconBg: 'bg-blue-100' },
-    { label: 'Prescriptions Today', value: todayPrescriptions, trend: '+8%', positive: true, icon: FileText, color: 'bg-emerald-50 text-emerald-700', iconBg: 'bg-emerald-100' },
-    { label: 'Total Patients', value: '1,248', trend: '+3.2%', positive: true, icon: Users, color: 'bg-purple-50 text-purple-700', iconBg: 'bg-purple-100' },
-    { label: 'Appointments', value: 32, trend: '-2', positive: false, icon: Calendar, color: 'bg-amber-50 text-amber-700', iconBg: 'bg-amber-100' },
+    { label: "Total Patients", value: "128", trend: "+3.2%", positive: true, icon: Users, color: "text-purple-700", iconBg: "bg-purple-50" },
+    { label: "Today's Patients", value: "12", trend: "+12%", positive: true, icon: Users, color: "text-blue-700", iconBg: "bg-blue-50" },
+    { label: "Follow-ups Due", value: "5", trend: "-2", positive: false, icon: CalendarClock, color: "text-amber-700", iconBg: "bg-amber-50" },
+    { label: "Upcoming Appointments", value: "8", trend: "+5%", positive: true, icon: Calendar, color: "text-emerald-700", iconBg: "bg-emerald-50" },
   ];
 
   const quickActions = [
     { label: 'New Patient', icon: UserPlus, color: 'bg-primary-900 text-white hover:bg-primary-800', path: '/patients' },
     { label: 'New Prescription', icon: FilePlus, color: 'bg-teal-700 text-white hover:bg-teal-800', path: '/prescriptions/new' },
     { label: 'Search Patient', icon: Search, color: 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200', path: '/patients' },
-    { label: 'View Appointments', icon: Calendar, color: 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200', path: '/patients' },
+    { label: 'Follow-ups List', icon: CalendarClock, color: 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200', path: '/follow-ups' },
   ];
 
   return (
     <div className="space-y-6">
-      {/* Greeting */}
+      {/* Greeting Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">
-            {getGreeting()}, {currentDoctor.name.replace('Dr. ', 'Dr.\u00A0')} 👋
+            {getGreeting()}, {currentDoctor.name} 👋
           </h1>
           <p className="text-slate-500 text-sm mt-0.5">
-            Here's what's happening at your clinic today — <span className="font-medium text-slate-700">Tuesday, 01 September 2026</span>
+            Here's your clinic overview for today — <span className="font-medium text-slate-700">Tuesday, 01 September 2026</span>
           </p>
         </div>
-        <div className="flex items-center gap-2 text-xs text-slate-500 bg-white border border-slate-200 px-3 py-2 rounded-lg">
-          <Activity size={13} className="text-emerald-500" />
-          <span className="text-emerald-700 font-medium">Clinic is Open</span>
+        <div className="flex items-center gap-2 text-xs text-slate-500 bg-white border border-slate-200 px-3 py-2 rounded-lg shadow-xs">
+          <Activity size={14} className="text-emerald-500" />
+          <span className="text-emerald-700 font-semibold">Clinic Active</span>
           <span className="text-slate-300">·</span>
-          <span>09:00 AM – 06:00 PM</span>
+          <span>OPD Hours: 09:00 AM – 06:00 PM</span>
         </div>
       </div>
 
-      {/* Stats Cards */}
+      {/* Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat) => (
           <div key={stat.label} className="card p-4 hover:shadow-card-hover transition-shadow duration-200">
             <div className="flex items-start justify-between mb-3">
-              <div className={`w-9 h-9 rounded-lg ${stat.iconBg} flex items-center justify-center`}>
-                <stat.icon size={18} className={stat.color.split(' ')[1]} />
+              <div className={`w-10 h-10 rounded-xl ${stat.iconBg} flex items-center justify-center`}>
+                <stat.icon size={20} className={stat.color} />
               </div>
-              <span className={`flex items-center gap-0.5 text-xs font-medium ${stat.positive ? 'text-emerald-700' : 'text-red-600'}`}>
-                {stat.positive ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+              <span className={`flex items-center gap-0.5 text-xs font-semibold ${stat.positive ? 'text-emerald-700' : 'text-amber-600'}`}>
+                {stat.positive ? <TrendingUp size={13} /> : <TrendingDown size={13} />}
                 {stat.trend}
               </span>
             </div>
             <p className="text-2xl font-bold text-slate-900">{stat.value}</p>
-            <p className="text-xs text-slate-500 mt-0.5">{stat.label}</p>
+            <p className="text-xs text-slate-500 font-medium mt-0.5">{stat.label}</p>
           </div>
         ))}
       </div>
 
       {/* Quick Actions */}
-      <div className="card p-5">
-        <h2 className="text-sm font-semibold text-slate-700 mb-4">Quick Actions</h2>
+      <div className="card p-4">
+        <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Quick Actions</h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {quickActions.map(({ label, icon: Icon, color, path }) => (
             <button
               key={label}
               onClick={() => navigate(path)}
-              className={`flex flex-col items-center gap-2.5 p-4 rounded-xl text-sm font-medium transition-all duration-150 ${color}`}
+              className={`flex items-center justify-center gap-2.5 p-3 rounded-xl text-xs font-semibold transition-all duration-150 shadow-xs ${color}`}
             >
-              <Icon size={22} />
-              <span className="text-xs text-center leading-tight">{label}</span>
+              <Icon size={16} />
+              <span>{label}</span>
             </button>
           ))}
         </div>
       </div>
 
-      {/* Main content grid */}
+      {/* Main Grid: Today's Patients & Follow-ups */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* Recent Patients */}
+        {/* Today's Patients Section */}
         <div className="xl:col-span-2 card overflow-hidden">
           <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-slate-900">Recent Patients</h2>
+            <div>
+              <h2 className="text-base font-bold text-slate-900">Today's Patients</h2>
+              <p className="text-xs text-slate-500">Live consultation queue and appointment list</p>
+            </div>
             <button
               onClick={() => navigate('/patients')}
-              className="text-xs text-primary-900 font-medium hover:underline flex items-center gap-1"
+              className="text-xs font-semibold text-primary-900 hover:underline flex items-center gap-1"
             >
-              View all <ArrowRight size={12} />
+              All Patients <ArrowRight size={13} />
             </button>
           </div>
+
           <div className="overflow-x-auto">
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Patient</th>
-                  <th>Patient ID</th>
-                  <th className="hidden sm:table-cell">Age</th>
-                  <th className="hidden md:table-cell">Last Visit</th>
-                  <th className="hidden lg:table-cell">Doctor</th>
-                  <th>Action</th>
+                  <th>Patient Name</th>
+                  <th>Age / Gender</th>
+                  <th>Appt Time</th>
+                  <th>Reason</th>
+                  <th>Status</th>
+                  <th className="text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {recentPatients.map((p) => (
-                  <tr key={p.id}>
+                {mockAppointments.map((apt) => (
+                  <tr key={apt.id} className="hover:bg-slate-50 transition-colors">
                     <td>
                       <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
                           <span className="text-primary-900 text-xs font-bold">
-                            {p.name.split(' ').map(n => n[0]).join('').slice(0,2)}
+                            {apt.patientName.split(' ').map(n => n[0]).join('').slice(0, 2)}
                           </span>
                         </div>
                         <div>
-                          <p className="font-medium text-slate-900 text-sm">{p.name}</p>
-                          <p className="text-xs text-slate-400 sm:hidden">{p.id}</p>
+                          <p className="font-semibold text-slate-900 text-sm">{apt.patientName}</p>
+                          <p className="text-xs text-slate-400 font-mono">{apt.patientId}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="hidden sm:table-cell">
-                      <span className="font-mono text-xs text-slate-600">{p.id}</span>
-                    </td>
-                    <td className="hidden sm:table-cell text-slate-600">{p.age}</td>
-                    <td className="hidden md:table-cell text-slate-600">
-                      {p.lastVisit === '2026-09-01' ? (
-                        <span className="text-emerald-700 font-medium text-xs bg-emerald-50 px-2 py-0.5 rounded-full">Today</span>
-                      ) : p.lastVisit === '2026-08-31' ? (
-                        <span className="text-slate-600 text-xs">Yesterday</span>
-                      ) : (
-                        <span className="text-xs text-slate-500">{new Date(p.lastVisit).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</span>
-                      )}
-                    </td>
-                    <td className="hidden lg:table-cell">
-                      <span className="text-xs text-slate-600">{p.doctor}</span>
+                    <td className="text-slate-600 text-xs">
+                      {apt.age} yrs · {apt.gender}
                     </td>
                     <td>
-                      <button
-                        onClick={() => navigate(`/patients/${p.id}`)}
-                        className="flex items-center gap-1 text-xs font-medium text-primary-900 hover:underline"
-                      >
-                        <Eye size={13} /> View
-                      </button>
+                      <span className="text-xs font-semibold text-slate-800 bg-slate-100 px-2 py-0.5 rounded font-mono">
+                        {apt.appointmentTime}
+                      </span>
+                    </td>
+                    <td className="text-slate-600 text-xs max-w-[160px] truncate" title={apt.reason}>
+                      {apt.reason}
+                    </td>
+                    <td>
+                      <AppointmentStatusBadge status={apt.status} />
+                    </td>
+                    <td className="text-right">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => navigate(`/patients/${apt.patientId}`)}
+                          className="btn-secondary btn-sm"
+                          title="View Patient Profile"
+                        >
+                          <Eye size={12} />
+                          <span className="hidden md:inline">View Patient</span>
+                        </button>
+                        <button
+                          onClick={() => navigate(`/prescriptions/RX-2026-00128/preview`)}
+                          className="btn-secondary btn-sm"
+                          title="View Prescription"
+                        >
+                          <FileText size={12} />
+                          <span className="hidden md:inline">Prescription</span>
+                        </button>
+                        <button
+                          onClick={() => navigate(`/prescriptions/new?patient=${apt.patientId}`)}
+                          className="btn-primary btn-sm"
+                          title="Start Consultation"
+                        >
+                          <Stethoscope size={12} />
+                          <span>Consult</span>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -179,38 +216,71 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Right Column */}
+        {/* Right Sidebar: Follow-ups Due & Recent Prescriptions */}
         <div className="space-y-5">
-          {/* Recent Prescriptions */}
+          {/* Follow-ups Due Widget */}
           <div className="card overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-slate-900">Recent Prescriptions</h2>
+            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CalendarClock size={16} className="text-amber-600" />
+                <h2 className="text-sm font-bold text-slate-900">Follow-ups Due</h2>
+              </div>
               <button
-                onClick={() => navigate('/prescriptions')}
-                className="text-xs text-primary-900 font-medium hover:underline flex items-center gap-1"
+                onClick={() => navigate('/follow-ups')}
+                className="text-xs text-primary-900 font-semibold hover:underline"
               >
-                View all <ArrowRight size={12} />
+                View all
               </button>
             </div>
             <div className="divide-y divide-slate-100">
-              {recentPrescriptions.map((rx) => (
-                <div key={rx.id} className="px-5 py-3.5 hover:bg-slate-50 transition-colors">
+              {mockFollowUps.slice(0, 4).map((f) => (
+                <div key={f.id} className="p-3.5 hover:bg-slate-50 transition-colors">
                   <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-primary-900 font-mono">{rx.id}</p>
-                      <p className="text-sm font-medium text-slate-800 truncate">{rx.patientName}</p>
-                      <p className="text-xs text-slate-400">{rx.date === '2026-09-01' ? `Today, ${rx.time}` : rx.date}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">{rx.medicines.length} medicines</p>
+                    <div>
+                      <p className="text-xs font-bold text-slate-900">{f.patientName}</p>
+                      <p className="text-[11px] text-slate-500 mt-0.5">{f.reason}</p>
+                      <span className="inline-block mt-1 text-[10px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded">
+                        Due: {f.displayDate}
+                      </span>
                     </div>
-                    <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                      <StatusBadge status={rx.status} />
-                      <button
-                        onClick={() => navigate(`/prescriptions/${rx.id}`)}
-                        className="text-xs text-primary-900 font-medium hover:underline"
-                      >
-                        View
-                      </button>
+                    <button
+                      onClick={() => navigate(`/patients/${f.patientId}`)}
+                      className="text-xs font-medium text-primary-900 hover:underline flex-shrink-0"
+                    >
+                      View
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Recent Prescriptions */}
+          <div className="card overflow-hidden">
+            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
+              <h2 className="text-sm font-bold text-slate-900">Recent Prescriptions</h2>
+              <button
+                onClick={() => navigate('/prescriptions')}
+                className="text-xs text-primary-900 font-semibold hover:underline"
+              >
+                View all
+              </button>
+            </div>
+            <div className="divide-y divide-slate-100">
+              {mockPrescriptions.map((rx) => (
+                <div key={rx.id} className="p-3.5 hover:bg-slate-50 transition-colors">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-xs font-mono font-bold text-primary-900">{rx.id}</p>
+                      <p className="text-xs font-semibold text-slate-800 mt-0.5">{rx.patientName}</p>
+                      <p className="text-[11px] text-slate-500">{rx.diagnosis}</p>
                     </div>
+                    <button
+                      onClick={() => navigate(`/prescriptions/${rx.id}/preview`)}
+                      className="btn-secondary btn-sm text-[11px]"
+                    >
+                      Preview
+                    </button>
                   </div>
                 </div>
               ))}

@@ -420,12 +420,42 @@ export default function PrescriptionPreview() {
           )}
         </div>
 
+        {/* ══ DOCTOR SIGNATURE SECTION ════════════════════════════════════════ */}
+        <div style={{ padding: '16px 0 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+          <div>
+            <p style={{ margin: 0, fontSize: '10px', fontWeight: 700, color: '#002B66' }}>Next Follow-up Date:</p>
+            <p style={{ margin: '2px 0 0', fontSize: '11px', fontWeight: 800, color: '#D32F2F' }}>
+              {rx.followUpDate || '30 Sep 2026'} ({rx.followUp || '30'} {rx.followUpUnit || 'Days'})
+            </p>
+          </div>
+          <div style={{ textAlign: 'center', minWidth: '180px' }}>
+            <div style={{
+              height: '40px',
+              borderBottom: '1.5px solid #0f172a',
+              display: 'flex',
+              alignItems: 'center',
+              justify: 'center',
+              marginBottom: '4px'
+            }}>
+              <span style={{ fontFamily: 'cursive', fontSize: '16px', color: '#0F2D5E', fontStyle: 'italic', fontWeight: 700 }}>
+                {currentDoctor.name}
+              </span>
+            </div>
+            <p style={{ margin: 0, fontSize: '11px', fontWeight: 800, color: '#0f172a' }}>
+              {currentDoctor.name}
+            </p>
+            <p style={{ margin: 0, fontSize: '9px', color: '#475569', fontWeight: 600 }}>
+              Reg No: {currentDoctor.regNumber} | {currentDoctor.qualification}
+            </p>
+          </div>
+        </div>
+
         {/* ══ DISCLAIMER & FOOTER ══════════════════════════════════════════════ */}
-        <div style={{ paddingTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+        <div style={{ paddingTop: '10px', borderTop: '1px border-slate-200', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <div style={{ maxWidth: '520px' }}>
             <p style={{ margin: '0 0 2px', fontSize: '9.5px', fontWeight: 700, color: '#1e293b' }}>Disclaimer:</p>
             <p style={{ margin: 0, fontSize: '8.5px', color: '#475569', lineHeight: 1.4 }}>
-              This prescription was generated digitally by Dr. Pradeep Patil on {formatDate(rx.date).replace(/^[A-Za-z]+,\s*/, '')}, based on your inputs during tele-consultation. It is valid from the date of issue until the specific period/dosage of each medicine as advised.
+              This prescription was generated digitally by {currentDoctor.name} on {formatDate(rx.date).replace(/^[A-Za-z]+,\s*/, '')}, based on clinical consultation. Valid from date of issue for the specified dosage duration.
             </p>
           </div>
           <div style={{ textAlign: 'right', fontSize: '10px', fontWeight: 700, color: '#0f172a' }}>
