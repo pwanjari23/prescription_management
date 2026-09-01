@@ -1,153 +1,171 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, Plus, Edit, Droplets, AlertTriangle, Calendar, FileText,
-  Phone, Mail, MapPin, Activity, Download, Eye, User, Heart, Stethoscope, Clock
+  ArrowLeft, Plus, Eye, Share2, Repeat, Stethoscope, Activity,
+  Heart, FileText, Calendar, AlertTriangle, Phone, Mail, MapPin,
+  Download, Droplets, Clock, Pill, CheckCircle2, ChevronRight
 } from 'lucide-react';
-import { mockPatients, mockConsultations, mockPrescriptions } from '../data/mockData';
+import { mockPatients, mockConsultations, mockPrescriptions, currentDoctor } from '../data/mockData';
 
 export default function PatientProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('Timeline');
+  const [filterTab, setFilterTab] = useState('All');
 
-  const patient = mockPatients.find(p => p.id === id) || mockPatients[0];
+  const rawId = id ? decodeURIComponent(id).trim() : '';
+  const cleanId = rawId.replace(/[\s_]/g, '-');
+
+  const patient = mockPatients.find(p => p && (p.id === rawId || p.id === cleanId || (p.id && p.id.replace(/[\s_]/g, '-') === cleanId))) || mockPatients[0] || {};
   const patientPrescriptions = mockPrescriptions.filter(rx => rx.patientId === patient.id);
   const patientConsultations = mockConsultations.filter(c => c.patientId === patient.id);
 
-  // Default timeline entries if none in mockConsultations
-  const displayConsultations = patientConsultations.length > 0 ? patientConsultations : [
+  // Expanded clinical timeline entries
+  const timelineEntries = [
     {
-      id: 'CONS-DEMO-1',
-      patientId: patient.id,
+      id: 'RX-2026-00128',
       date: '01 Sep 2026',
-      diagnosis: 'Viral Fever & Body Ache',
-      prescriptionCount: 2,
+      time: '11:42 AM',
+      type: 'OPD Consultation',
       doctor: patient.doctor || 'Dr. Pradeep Patil',
-      vitals: 'BP 120/80 · Pulse 78 · Temp 100°F',
-      notes: 'Patient reported fever, headache, and body ache for 2 days. Prescribed Paracetamol 500mg and Pantoprazole 40mg.',
+      complaint: 'Chest discomfort on exertion, mild breathlessness',
+      diagnosis: 'Stable Angina, Stage 1 Hypertension',
+      vitals: { bp: '132/86', pulse: '74', spo2: '97%', temp: '98.6°F' },
+      medicines: [
+        { name: 'Aspirin 75mg', dosage: '1 tablet', frequency: '1-0-0', duration: '30 Days', instructions: 'After food' },
+        { name: 'Atorvastatin 20mg', dosage: '1 tablet', frequency: '0-0-1', duration: '30 Days', instructions: 'At bedtime' },
+        { name: 'Amlodipine 5mg', dosage: '1 tablet', frequency: '1-0-0', duration: '30 Days', instructions: 'Morning' },
+      ],
+      advice: 'Avoid strenuous exertion. Low salt and low lipid diet. Walk 30 minutes daily.',
+      followUp: '30 Days (30 Sep 2026)',
+      status: 'Finalized',
     },
     {
-      id: 'CONS-DEMO-2',
-      patientId: patient.id,
+      id: 'RX-2026-00115',
       date: '15 Aug 2026',
-      diagnosis: 'Common Cold & Sore Throat',
-      prescriptionCount: 1,
+      time: '10:15 AM',
+      type: 'Follow-up Visit',
       doctor: patient.doctor || 'Dr. Pradeep Patil',
-      vitals: 'BP 118/76 · Pulse 72 · Temp 98.6°F',
-      notes: 'Mild upper respiratory symptoms. Advised warm water gargles and Cetirizine 10mg.',
+      complaint: 'Routine blood pressure review & medication refill',
+      diagnosis: 'Essential Hypertension (Controlled)',
+      vitals: { bp: '124/80', pulse: '72', spo2: '98%', temp: '98.4°F' },
+      medicines: [
+        { name: 'Amlodipine 5mg', dosage: '1 tablet', frequency: '1-0-0', duration: '30 Days', instructions: 'Morning' },
+        { name: 'Telmisartan 40mg', dosage: '1 tablet', frequency: '1-0-0', duration: '30 Days', instructions: 'Morning' },
+      ],
+      advice: 'Continue regular exercise and BP logging twice weekly.',
+      followUp: '15 Days (31 Aug 2026)',
+      status: 'Finalized',
+    },
+    {
+      id: 'RX-2026-00098',
+      date: '02 Jun 2026',
+      time: '04:30 PM',
+      type: 'Emergency Consultation',
+      doctor: 'Dr. Rahul Sharma',
+      complaint: 'Acute viral fever, headache, body pain',
+      diagnosis: 'Acute Viral Pyrexia & Dehydration',
+      vitals: { bp: '118/76', pulse: '88', spo2: '98%', temp: '101.2°F' },
+      medicines: [
+        { name: 'Paracetamol 500mg', dosage: '1 tablet', frequency: '1-0-1', duration: '5 Days', instructions: 'After food' },
+        { name: 'Pantoprazole 40mg', dosage: '1 tablet', frequency: '1-0-0', duration: '7 Days', instructions: 'Before breakfast' },
+      ],
+      advice: 'Drink warm fluids, rest for 3 days.',
+      followUp: '7 Days',
+      status: 'Finalized',
     },
   ];
 
-  return (
-    <div className="space-y-6">
-      {/* Back button */}
-      <button
-        onClick={() => navigate('/patients')}
-        className="flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors"
-      >
-        <ArrowLeft size={16} />
-        Back to Patients List
-      </button>
+  const filteredTimeline = timelineEntries.filter(item => {
+    if (filterTab === 'Prescriptions') return item.medicines && item.medicines.length > 0;
+    if (filterTab === 'Follow-ups') return item.followUp;
+    return true;
+  });
 
-      {/* Patient Header Card */}
-      <div className="card p-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-primary-100 rounded-2xl flex items-center justify-center flex-shrink-0">
-              <span className="text-primary-900 text-xl font-bold">
-                {patient.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-              </span>
+  const patientName = patient.name || 'Rahul Sharma';
+  const patientId = patient.id || 'PT-00124';
+  const initials = patientName.split(' ').map(n => n[0]).join('').slice(0, 2) || 'PT';
+  const patientAllergies = Array.isArray(patient.allergies) ? patient.allergies : [];
+
+  return (
+    <div className="space-y-5 w-full">
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <button
+          onClick={() => navigate('/patients')}
+          className="flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors"
+        >
+          <ArrowLeft size={16} /> Back to Patients List
+        </button>
+        <button
+          onClick={() => navigate(`/prescriptions/new?patient=${patientId}`)}
+          className="btn-primary flex items-center gap-1.5"
+        >
+          <Plus size={16} /> Create Prescription
+        </button>
+      </div>
+
+      {/* Patient Header Card (Includes Blood Group, Allergies & Status Tags) */}
+      <div className="card p-5">
+        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+          <div className="flex items-start gap-4">
+            <div className="w-14 h-14 bg-primary-100 rounded-2xl flex items-center justify-center flex-shrink-0 border border-primary-200">
+              <span className="text-primary-900 text-lg font-bold">{initials}</span>
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-2xl font-bold text-slate-900">{patient.name}</h1>
-                <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold ${patient.gender === 'Male' ? 'bg-blue-50 text-blue-700' : 'bg-pink-50 text-pink-700'}`}>
-                  {patient.gender}
+                <h1 className="text-xl font-bold text-slate-900">{patientName}</h1>
+                <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold ${patient.gender === 'Female' ? 'bg-pink-50 text-pink-700 border border-pink-200' : 'bg-blue-50 text-blue-700 border border-blue-200'}`}>
+                  {patient.gender || 'Male'}
                 </span>
-                <span className="font-mono text-xs text-slate-500 font-semibold bg-slate-100 px-2 py-0.5 rounded">
-                  {patient.id}
+                <span className="font-mono text-xs text-slate-600 font-semibold bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                  {patientId}
+                </span>
+                <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-red-50 text-red-700 border border-red-200 flex items-center gap-1">
+                  <Droplets size={11} /> {patient.bloodGroup || 'O+'}
                 </span>
               </div>
-              <p className="text-slate-500 text-sm mt-1">
-                Age {patient.age} years · DOB: {patient.dob}
+              <p className="text-slate-500 text-xs mt-1">
+                Age {patient.age || 56} Yrs · DOB: {patient.dob || '15 Mar 1970'} · Registered: {patient.registeredOn || '15 Jan 2024'}
               </p>
-              <div className="flex flex-wrap gap-4 mt-2">
-                <div className="flex items-center gap-1.5 text-xs font-mono text-slate-600">
+
+              {/* Contact Info Pills */}
+              <div className="flex flex-wrap gap-4 mt-2.5">
+                <div className="flex items-center gap-1.5 text-xs font-mono text-slate-700">
                   <Phone size={13} className="text-slate-400" />
-                  <span>{patient.phone}</span>
+                  <span>{patient.phone || '9823012345'}</span>
                 </div>
-                <div className="flex items-center gap-1.5 text-xs text-slate-600">
+                <div className="flex items-center gap-1.5 text-xs text-slate-700">
                   <Mail size={13} className="text-slate-400" />
-                  <span>{patient.email}</span>
+                  <span>{patient.email || 'rahul.sharma@email.com'}</span>
                 </div>
-                <div className="flex items-center gap-1.5 text-xs text-slate-600">
+                <div className="flex items-center gap-1.5 text-xs text-slate-700">
                   <MapPin size={13} className="text-slate-400" />
-                  <span>{patient.address}</span>
+                  <span>{patient.address || 'Plot 12, Dharampeth, Nagpur'}</span>
                 </div>
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <button
-              onClick={() => navigate(`/prescriptions/new?patient=${patient.id}`)}
-              className="btn-primary flex items-center gap-1.5"
-            >
-              <Plus size={16} />
-              Create Prescription
-            </button>
-          </div>
         </div>
+
+        {/* Drug Allergy Warning Alert */}
+        {patientAllergies.length > 0 && (
+          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-2 text-xs font-semibold text-amber-900 bg-amber-50 p-2.5 rounded-lg border border-amber-200">
+            <AlertTriangle size={15} className="text-amber-600 flex-shrink-0" />
+            <span>Drug Allergy Warning: {patientAllergies.join(', ')} (Avoid Penicillin group antibiotics)</span>
+          </div>
+        )}
       </div>
 
-      {/* Medical Information Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="card p-4">
-          <div className="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center mb-2">
-            <Droplets size={16} />
-          </div>
-          <p className="text-xs text-slate-400 font-medium">Blood Group</p>
-          <p className="text-lg font-bold text-slate-900 mt-0.5">{patient.bloodGroup || 'O+'}</p>
-        </div>
-
-        <div className="card p-4">
-          <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center mb-2">
-            <AlertTriangle size={16} />
-          </div>
-          <p className="text-xs text-slate-400 font-medium">Drug Allergies</p>
-          <p className="text-sm font-bold text-slate-900 mt-0.5">
-            {patient.allergies && patient.allergies.length > 0 ? patient.allergies.join(', ') : 'None Reported'}
-          </p>
-        </div>
-
-        <div className="card p-4">
-          <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center mb-2">
-            <Calendar size={16} />
-          </div>
-          <p className="text-xs text-slate-400 font-medium">Last Visit</p>
-          <p className="text-sm font-bold text-slate-900 mt-0.5">{patient.lastVisit || 'Today'}</p>
-        </div>
-
-        <div className="card p-4">
-          <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center mb-2">
-            <Clock size={16} />
-          </div>
-          <p className="text-xs text-slate-400 font-medium">Next Follow-up</p>
-          <p className="text-sm font-bold text-slate-900 mt-0.5">{patient.nextFollowUp || '15 Sep 2026'}</p>
-        </div>
-      </div>
-
-      {/* Main Grid: Conditions, Medications, & Medical History Timeline */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column: Clinical Summary */}
-        <div className="space-y-5">
-          {/* Existing Conditions */}
-          <div className="card p-5">
-            <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
-              <Heart size={16} className="text-red-500" />
-              Existing Medical Conditions
+      {/* Main Layout Grid: Clinical Summary Sidebar + Timeline */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        {/* Left Column: Patient Clinical Profile */}
+        <div className="space-y-4">
+          {/* Chronic Conditions */}
+          <div className="card p-4">
+            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+              <Heart size={14} className="text-red-500" /> Existing Medical Conditions
             </h3>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5">
               {patient.existingConditions && patient.existingConditions.length > 0 ? (
                 patient.existingConditions.map(c => (
                   <span key={c} className="px-2.5 py-1 bg-red-50 text-red-700 border border-red-200 rounded-lg text-xs font-semibold">
@@ -155,96 +173,169 @@ export default function PatientProfile() {
                   </span>
                 ))
               ) : (
-                <p className="text-xs text-slate-400">No chronic conditions recorded</p>
+                <span className="text-xs text-slate-400">Hypertension, Coronary Artery Disease</span>
               )}
             </div>
           </div>
 
-          {/* Current Medications */}
-          <div className="card p-5">
-            <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
-              <FileText size={16} className="text-teal-600" />
-              Current Medications
+          {/* Current Active Medications */}
+          <div className="card p-4">
+            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+              <Pill size={14} className="text-teal-600" /> Active Medications
             </h3>
             <div className="space-y-2">
-              {patient.currentMedications && patient.currentMedications.length > 0 ? (
-                patient.currentMedications.map(m => (
-                  <div key={m} className="flex items-center gap-2 text-xs font-semibold text-slate-700 p-2 bg-slate-50 rounded-lg border border-slate-100">
-                    <span className="w-2 h-2 rounded-full bg-teal-500 flex-shrink-0" />
-                    <span>{m}</span>
-                  </div>
-                ))
-              ) : (
-                <p className="text-xs text-slate-400">No active medications recorded</p>
-              )}
+              {(patient.currentMedications && patient.currentMedications.length > 0 ? patient.currentMedications : ['Aspirin 75mg', 'Atorvastatin 20mg', 'Amlodipine 5mg']).map(m => (
+                <div key={m} className="flex items-center gap-2 text-xs font-semibold text-slate-800 p-2 bg-slate-50 rounded-lg border border-slate-100">
+                  <span className="w-2 h-2 rounded-full bg-teal-500 flex-shrink-0" />
+                  <span>{m}</span>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Doctor Notes */}
-          <div className="card p-5">
-            <h3 className="text-sm font-bold text-slate-900 mb-2">Doctor Notes</h3>
-            <p className="text-xs text-slate-600 leading-relaxed bg-amber-50/60 p-3 rounded-lg border border-amber-100">
-              {patient.notes || 'Routine follow-ups and regular vitals monitoring recommended.'}
-            </p>
+          {/* Assigned Doctor & Notes */}
+          <div className="card p-4 space-y-3">
+            <div>
+              <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Primary Doctor</span>
+              <div className="flex items-center gap-2">
+                <Stethoscope size={14} className="text-emerald-600" />
+                <span className="text-xs font-bold text-slate-900">{patient.doctor || 'Dr. Pradeep Patil'}</span>
+              </div>
+            </div>
+            <div className="border-t border-slate-100 pt-2">
+              <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Consultation Notes</span>
+              <p className="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-100 leading-relaxed italic">
+                "{patient.notes || 'Advised low-sodium diet, regular 30 min walks, and daily BP monitoring.'}"
+              </p>
+            </div>
           </div>
         </div>
 
         {/* Right Column: Medical History Timeline */}
-        <div className="lg:col-span-2 card p-6">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
+        <div className="lg:col-span-2 card p-5 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
             <div>
-              <h2 className="text-base font-bold text-slate-900">Medical History Timeline</h2>
-              <p className="text-xs text-slate-500">Historical consultations, diagnoses, and past prescriptions</p>
+              <h2 className="text-base font-bold text-slate-900">Medical History &amp; Consultations</h2>
+              <p className="text-xs text-slate-500">Timeline of clinical visits, diagnoses, and past prescriptions</p>
             </div>
-            <span className="px-2.5 py-1 bg-primary-100 text-primary-900 rounded-full text-xs font-bold">
-              {displayConsultations.length} Visits
-            </span>
+
+            {/* Filter Tabs */}
+            <div className="flex gap-1.5 bg-slate-100 p-1 rounded-lg">
+              {['All', 'Prescriptions', 'Follow-ups'].map(tab => (
+                <button
+                  key={tab}
+                  onClick={() => setFilterTab(tab)}
+                  className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
+                    filterTab === tab
+                      ? 'bg-white text-slate-900 shadow-2xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Vertical Timeline */}
-          <div className="relative pl-6 space-y-8 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
-            {displayConsultations.map((item, idx) => (
+          {/* Vertical Clinical Timeline */}
+          <div className="relative pl-6 space-y-6 before:absolute before:left-2.5 before:top-3 before:bottom-3 before:w-0.5 before:bg-slate-200">
+            {filteredTimeline.map((item, idx) => (
               <div key={item.id || idx} className="relative group">
-                {/* Node indicator dot */}
-                <div className="absolute -left-6 top-1 w-4 h-4 rounded-full bg-primary-900 border-2 border-white ring-4 ring-slate-50 flex items-center justify-center" />
+                {/* Timeline node icon */}
+                <div className="absolute -left-6 top-1.5 w-5 h-5 rounded-full bg-primary-900 border-2 border-white ring-4 ring-slate-50 flex items-center justify-center text-white">
+                  <Stethoscope size={10} />
+                </div>
 
-                <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 hover:border-primary-200 transition-colors">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2">
+                {/* Timeline Card */}
+                <div className="bg-slate-50/80 rounded-xl p-4 border border-slate-200 hover:border-primary-300 transition-all space-y-3">
+                  {/* Top Visit Row */}
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/60 pb-2.5">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-slate-900 bg-white px-2.5 py-1 rounded-md border border-slate-200 shadow-2xs">
-                        {item.date}
+                      <span className="text-xs font-bold font-mono bg-white px-2.5 py-0.5 rounded border border-slate-200 text-slate-900">
+                        {item.date} · {item.time}
                       </span>
-                      <span className="text-xs font-semibold text-primary-900 flex items-center gap-1">
-                        <Stethoscope size={13} /> Consultation
+                      <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-primary-50 text-primary-900 border border-primary-100">
+                        {item.type}
                       </span>
                     </div>
-                    <span className="text-[11px] text-slate-400">{item.doctor}</span>
+                    <span className="text-xs text-slate-600 font-semibold flex items-center gap-1">
+                      <Stethoscope size={12} className="text-emerald-600" /> {item.doctor}
+                    </span>
                   </div>
 
-                  <div className="space-y-2 mt-3">
-                    <div className="text-xs">
-                      <span className="font-bold text-slate-700">Diagnosis: </span>
-                      <span className="font-semibold text-slate-900">{item.diagnosis}</span>
+                  {/* Diagnosis & Chief Complaint */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase block">Chief Complaint</span>
+                      <p className="text-slate-800 font-semibold mt-0.5">{item.complaint}</p>
                     </div>
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase block">Diagnosis</span>
+                      <p className="text-slate-900 font-bold mt-0.5">{item.diagnosis}</p>
+                    </div>
+                  </div>
 
-                    <div className="text-xs">
-                      <span className="font-bold text-slate-700">Prescription: </span>
-                      <span className="text-teal-700 font-semibold bg-teal-50 px-2 py-0.5 rounded">
-                        {typeof item.prescriptionCount === 'number' ? `${item.prescriptionCount} Medicines` : item.prescriptionSummary}
+                  {/* Vitals Badges */}
+                  {item.vitals && (
+                    <div className="flex flex-wrap gap-2 items-center text-xs">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">Vitals:</span>
+                      <span className="px-2 py-0.5 bg-white border border-slate-200 rounded font-mono text-[11px] font-semibold text-slate-800">
+                        BP: {item.vitals.bp}
+                      </span>
+                      <span className="px-2 py-0.5 bg-white border border-slate-200 rounded font-mono text-[11px] font-semibold text-slate-800">
+                        Pulse: {item.vitals.pulse}
+                      </span>
+                      <span className="px-2 py-0.5 bg-white border border-slate-200 rounded font-mono text-[11px] font-semibold text-slate-800">
+                        SpO₂: {item.vitals.spo2}
+                      </span>
+                      <span className="px-2 py-0.5 bg-white border border-slate-200 rounded font-mono text-[11px] font-semibold text-slate-800">
+                        Temp: {item.vitals.temp}
                       </span>
                     </div>
+                  )}
 
-                    {item.vitals && (
-                      <div className="text-xs text-slate-600 bg-white p-2 rounded border border-slate-100 font-mono">
-                        <strong className="font-semibold text-slate-700">Vitals: </strong>{item.vitals}
+                  {/* Prescribed Medicines Grid */}
+                  {item.medicines && item.medicines.length > 0 && (
+                    <div className="bg-white rounded-lg p-3 border border-slate-200 space-y-2">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
+                        <Pill size={12} className="text-purple-600" /> Prescribed Medicines ({item.medicines.length})
+                      </span>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                        {item.medicines.map((m, mIdx) => (
+                          <div key={mIdx} className="p-2 bg-slate-50 rounded border border-slate-100 flex items-center justify-between">
+                            <div>
+                              <p className="font-bold text-slate-900">{m.name}</p>
+                              <p className="text-[10px] text-slate-500">{m.dosage} · {m.instructions}</p>
+                            </div>
+                            <span className="px-1.5 py-0.5 bg-blue-50 text-blue-800 font-mono font-bold text-[10px] rounded">
+                              {m.frequency}
+                            </span>
+                          </div>
+                        ))}
                       </div>
-                    )}
+                    </div>
+                  )}
 
-                    {item.notes && (
-                      <p className="text-xs text-slate-500 italic mt-1">
-                        "{item.notes}"
-                      </p>
-                    )}
+                  {/* Timeline Actions Footer */}
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-200/60">
+                    <span className="text-xs text-slate-500">
+                      Follow-up: <strong className="text-slate-800">{item.followUp}</strong>
+                    </span>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => navigate(`/prescriptions/new?patient=${patientId}&repeat=${item.id}`)}
+                        className="btn-secondary btn-sm py-1 flex items-center gap-1"
+                        title="Repeat this prescription"
+                      >
+                        <Repeat size={13} /> Repeat Rx
+                      </button>
+                      <button
+                        onClick={() => navigate(`/prescriptions/${item.id}/preview`)}
+                        className="btn-primary btn-sm py-1 flex items-center gap-1"
+                      >
+                        <Eye size={13} /> View Sheet
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
