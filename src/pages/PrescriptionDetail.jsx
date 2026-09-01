@@ -1,8 +1,6 @@
-import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Eye } from 'lucide-react';
-import { prescriptions } from '../data/prescriptions';
-import { patients } from '../data/patients';
-import { currentDoctor } from '../data/doctors';
+import { useParams, useNavigate } from 'react';
+import { ArrowLeft, Plus, Eye, User, Stethoscope, Activity, FileText } from 'lucide-react';
+import { mockPrescriptions, mockPatients, currentDoctor } from '../data/mockData';
 
 const StatusBadge = ({ status }) => {
   const cfg = {
@@ -21,179 +19,178 @@ export default function PrescriptionDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const rx = prescriptions.find(p => p.id === id);
-  if (!rx) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-        <p className="text-lg font-medium text-slate-600">Prescription not found</p>
-        <button onClick={() => navigate('/prescriptions')} className="btn-secondary mt-4">
-          <ArrowLeft size={14} /> Back
-        </button>
-      </div>
-    );
-  }
-
-  const patient = patients.find(p => p.id === rx.patientId);
+  const rx = mockPrescriptions.find(p => p.id === id) || mockPrescriptions[0];
+  const patient = mockPatients.find(p => p.id === rx.patientId) || mockPatients[0];
 
   return (
-    <div className="space-y-5 w-full">
-      <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900">
-        <ArrowLeft size={16} /> Back
-      </button>
-
-      {/* Header */}
-      <div className="card p-5 sm:p-6">
-        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+    <div className="space-y-4 w-full">
+      {/* Top Controls Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <button onClick={() => navigate(-1)} className="p-1.5 hover:bg-slate-200 rounded-lg text-slate-600 transition-colors">
+            <ArrowLeft size={16} />
+          </button>
           <div>
-            <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2">
               <h1 className="text-xl font-bold text-slate-900 font-mono">{rx.id}</h1>
               <StatusBadge status={rx.status} />
             </div>
-            <p className="text-slate-500 text-sm mt-1">
-              {new Date(rx.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })} at {rx.time}
+            <p className="text-xs text-slate-500 mt-0.5">
+              Prescribed on {rx.date} at {rx.time || '11:42 AM'}
             </p>
           </div>
-          <div>
-            <button
-              onClick={() => navigate(`/prescriptions/${rx.id}/preview`)}
-              className="btn-primary"
-            >
-              <Eye size={15} />
-              Preview
-            </button>
-          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate(`/prescriptions/${rx.id}/preview`)}
+            className="btn-primary btn-sm flex items-center gap-1.5"
+          >
+            <Eye size={14} /> Preview Printable Sheet
+          </button>
+          <button
+            onClick={() => navigate(`/prescriptions/new?patient=${rx.patientId}`)}
+            className="btn-secondary btn-sm flex items-center gap-1"
+          >
+            <Plus size={14} /> New Rx
+          </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {/* Patient Info */}
-        <div className="card p-5">
-          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-4">Patient</h2>
-          {patient && (
-            <div>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
-                  <span className="text-primary-900 text-sm font-bold">
-                    {patient.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                  </span>
-                </div>
-                <div>
-                  <p className="font-semibold text-slate-900">{patient.name}</p>
-                  <p className="text-xs text-slate-500">{patient.id}</p>
-                </div>
+      {/* 3-Column Top Grid: Patient, Doctor, & Clinical Details Side-by-Side */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Patient Summary Card */}
+        <div className="card p-4 flex flex-col justify-between">
+          <div>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2 flex items-center gap-1">
+              <User size={13} className="text-blue-600" /> Patient Details
+            </span>
+            <div className="flex items-center gap-2.5 mb-3">
+              <div className="w-9 h-9 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-primary-900 text-xs font-bold">
+                  {patient.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                </span>
               </div>
-              <div className="space-y-2 text-sm">
+              <div className="min-w-0">
+                <p className="font-bold text-slate-900 text-xs truncate">{patient.name}</p>
+                <p className="text-[11px] text-slate-500 font-mono">{patient.id}</p>
+              </div>
+            </div>
+            <div className="space-y-1.5 text-xs text-slate-600">
+              <div className="flex justify-between border-b border-slate-100 pb-1">
+                <span className="text-slate-400">Age / Gender</span>
+                <span className="font-semibold text-slate-800">{patient.age} Yrs · {patient.gender}</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-100 pb-1">
+                <span className="text-slate-400">Blood Group</span>
+                <span className="font-semibold text-slate-800">{patient.bloodGroup || 'O+'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Allergies</span>
+                <span className="font-semibold text-amber-700">{patient.allergies.length ? patient.allergies.join(', ') : 'None'}</span>
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={() => navigate(`/patients/${patient.id}`)}
+            className="mt-3 w-full btn-secondary btn-sm justify-center py-1 text-xs"
+          >
+            View Patient Profile
+          </button>
+        </div>
+
+        {/* Doctor Summary Card */}
+        <div className="card p-4 flex flex-col justify-between">
+          <div>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2 flex items-center gap-1">
+              <Stethoscope size={13} className="text-emerald-600" /> Prescribing Doctor
+            </span>
+            <div className="flex items-center gap-2.5 mb-2">
+              <div className="w-9 h-9 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-primary-900 text-xs font-bold">{currentDoctor.initials}</span>
+              </div>
+              <div>
+                <p className="font-bold text-slate-900 text-xs">{rx.doctorName || currentDoctor.name}</p>
+                <p className="text-[11px] text-slate-500">{currentDoctor.qualification}</p>
+              </div>
+            </div>
+            <div className="space-y-1 text-[11px] text-slate-600 border-t border-slate-100 pt-2">
+              <p className="font-semibold text-slate-800">Shree Swami Samarth Hospital</p>
+              <p className="text-slate-500">Manewada Ring Road, Nagpur</p>
+              <p className="text-slate-500">Reg No: {currentDoctor.regNumber}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Clinical Summary Card */}
+        <div className="card p-4">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2 flex items-center gap-1">
+            <Activity size={13} className="text-amber-600" /> Clinical Details
+          </span>
+          <div className="space-y-2 text-xs">
+            <div>
+              <span className="text-slate-400 text-[10px] font-bold uppercase block">Complaint</span>
+              <p className="text-slate-800 font-semibold">{rx.chiefComplaint || 'Chest discomfort on exertion'}</p>
+            </div>
+            <div>
+              <span className="text-slate-400 text-[10px] font-bold uppercase block">Diagnosis</span>
+              <p className="text-slate-900 font-bold">{rx.diagnosis || 'Stable Angina, Hypertension'}</p>
+            </div>
+            {rx.vitals && (
+              <div className="grid grid-cols-4 gap-1 pt-1">
                 {[
-                  { label: 'Age', value: `${patient.age} years` },
-                  { label: 'Gender', value: patient.gender },
-                  { label: 'Blood Group', value: patient.bloodGroup },
-                  { label: 'Allergies', value: patient.allergies.length ? patient.allergies.join(', ') : 'None' },
-                ].map(({ label, value }) => (
-                  <div key={label} className="flex gap-2">
-                    <span className="text-slate-400 w-24 flex-shrink-0 text-xs">{label}</span>
-                    <span className="text-slate-800 text-xs font-medium">{value}</span>
+                  { label: 'BP', val: rx.vitals.bp },
+                  { label: 'Pulse', val: rx.vitals.pulse },
+                  { label: 'SpO₂', val: rx.vitals.spo2 },
+                  { label: 'Temp', val: rx.vitals.temp },
+                ].filter(v => v.val).map(v => (
+                  <div key={v.label} className="bg-slate-50 p-1 rounded text-center border border-slate-100">
+                    <span className="text-[9px] text-slate-400 block">{v.label}</span>
+                    <span className="text-[11px] font-bold text-slate-800">{v.val}</span>
                   </div>
                 ))}
               </div>
-              <button
-                onClick={() => navigate(`/patients/${patient.id}`)}
-                className="mt-4 w-full btn-secondary btn-sm justify-center"
-              >
-                View Profile
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Doctor Info */}
-        <div className="card p-5">
-          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-4">Doctor</h2>
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
-              <span className="text-primary-900 text-sm font-bold">{currentDoctor.initials}</span>
-            </div>
-            <div>
-              <p className="font-semibold text-slate-900">{rx.doctorName}</p>
-              <p className="text-xs text-slate-500">Senior Doctor</p>
-            </div>
-          </div>
-          <div className="space-y-2 text-xs text-slate-600">
-            <p>Shree Swami Samarth Hospital</p>
-            <p>Trimurtee Nagar, Nagpur – 440022</p>
-            <p>Phone: 7083493268</p>
-          </div>
-        </div>
-
-        {/* Clinical Info */}
-        <div className="card p-5">
-          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-4">Clinical Details</h2>
-          <div className="space-y-3">
-            {rx.chiefComplaint && (
-              <div>
-                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Complaint</p>
-                <p className="text-sm text-slate-700 mt-0.5">{rx.chiefComplaint}</p>
-              </div>
-            )}
-            {rx.diagnosis && (
-              <div>
-                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Diagnosis</p>
-                <p className="text-sm text-slate-700 mt-0.5 font-medium">{rx.diagnosis}</p>
-              </div>
-            )}
-            {rx.vitals && Object.values(rx.vitals).some(v => v) && (
-              <div>
-                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-2">Vitals</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { label: 'BP', value: rx.vitals.bp },
-                    { label: 'Pulse', value: rx.vitals.pulse },
-                    { label: 'SpO₂', value: rx.vitals.spo2 },
-                    { label: 'Temp', value: rx.vitals.temp },
-                  ].filter(v => v.value).map(({ label, value }) => (
-                    <div key={label} className="text-center p-1.5 bg-slate-50 rounded-lg">
-                      <p className="text-[10px] text-slate-400">{label}</p>
-                      <p className="text-xs font-semibold text-slate-800">{value}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Medicines */}
+      {/* Prescribed Medicines Section */}
       <div className="card overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-slate-900">Medicines ({rx.medicines.length})</h2>
-          <span className="text-xs text-slate-400">Rx</span>
+        <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+          <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+            <FileText size={14} className="text-purple-600" /> Medicines ({rx.medicines.length})
+          </span>
+          <span className="text-xs font-mono font-semibold text-slate-500">Rx Sheet</span>
         </div>
         <div className="overflow-x-auto">
           <table className="data-table">
             <thead>
-              <tr>
+              <tr className="text-[11px]">
                 <th>#</th>
-                <th>Medicine</th>
+                <th>Medicine Name</th>
                 <th>Dosage</th>
-                <th className="hidden sm:table-cell">Frequency</th>
-                <th className="hidden md:table-cell">Duration</th>
-                <th className="hidden lg:table-cell">Route</th>
-                <th className="hidden lg:table-cell">Instructions</th>
+                <th>Frequency</th>
+                <th>Duration</th>
+                <th>Instructions</th>
               </tr>
             </thead>
             <tbody>
               {rx.medicines.map((m, i) => (
-                <tr key={i}>
-                  <td className="text-slate-400 font-mono text-xs">{i + 1}</td>
-                  <td>
-                    <p className="font-semibold text-slate-900">{m.name}</p>
-                    <p className="text-xs text-slate-400">{m.strength}</p>
+                <tr key={i} className="hover:bg-slate-50">
+                  <td className="text-slate-400 font-mono text-xs py-2 px-3">{i + 1}</td>
+                  <td className="py-2 px-3">
+                    <p className="font-bold text-slate-900 text-xs">{m.name}</p>
+                    <p className="text-[10px] text-slate-400">{m.strength}</p>
                   </td>
-                  <td className="text-slate-700">{m.dosage}</td>
-                  <td className="hidden sm:table-cell text-slate-600 text-sm">{m.frequency}</td>
-                  <td className="hidden md:table-cell text-slate-600 text-sm">{m.duration} {m.durationUnit}</td>
-                  <td className="hidden lg:table-cell text-slate-600 text-sm">{m.route}</td>
-                  <td className="hidden lg:table-cell text-slate-500 text-sm">{m.instructions || '—'}</td>
+                  <td className="text-slate-700 text-xs py-2 px-3 font-semibold">{m.dosage}</td>
+                  <td className="py-2 px-3">
+                    <span className="px-2 py-0.5 bg-blue-50 text-blue-800 rounded font-mono font-semibold text-[10px]">
+                      {m.frequency}
+                    </span>
+                  </td>
+                  <td className="text-slate-700 text-xs py-2 px-3 font-semibold">{m.duration} {m.durationUnit || 'Days'}</td>
+                  <td className="text-slate-600 text-xs italic py-2 px-3">{m.instructions || 'After food'}</td>
                 </tr>
               ))}
             </tbody>
@@ -201,46 +198,28 @@ export default function PrescriptionDetail() {
         </div>
       </div>
 
-      {/* Advice & Follow-up */}
+      {/* Advice & Follow-up Row */}
       {(rx.advice || rx.followUp) && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {rx.advice && (
-            <div className="card p-5">
-              <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Doctor's Advice</h2>
-              <p className="text-sm text-slate-700 leading-relaxed">{rx.advice}</p>
+            <div className="sm:col-span-2 card p-3.5">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Doctor's Advice</span>
+              <p className="text-xs text-slate-700 leading-relaxed font-medium">{rx.advice}</p>
             </div>
           )}
           {rx.followUp && (
-            <div className="card p-5">
-              <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Follow-up</h2>
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-primary-50 rounded-xl flex items-center justify-center">
-                  <span className="text-primary-900 font-bold text-lg">{rx.followUp}</span>
-                </div>
-                <div>
-                  <p className="font-semibold text-slate-900">{rx.followUp} {rx.followUpUnit}</p>
-                  <p className="text-xs text-slate-500">from prescription date</p>
-                </div>
+            <div className="card p-3.5 flex items-center gap-3">
+              <div className="w-10 h-10 bg-primary-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                <span className="text-primary-900 font-bold text-base">{rx.followUp}</span>
+              </div>
+              <div>
+                <p className="font-bold text-slate-900 text-xs">Follow-up: {rx.followUp} {rx.followUpUnit || 'Days'}</p>
+                <p className="text-[11px] text-slate-500">From consultation date</p>
               </div>
             </div>
           )}
         </div>
       )}
-
-      {/* Action: New Prescription for same patient */}
-      <div className="card p-4 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-sm font-medium text-slate-900">Need to create a new prescription for this patient?</p>
-          <p className="text-xs text-slate-500">All patient details will be pre-filled</p>
-        </div>
-        <button
-          onClick={() => navigate(`/prescriptions/new?patient=${rx.patientId}`)}
-          className="btn-primary"
-        >
-          <Plus size={14} />
-          New Prescription
-        </button>
-      </div>
     </div>
   );
 }

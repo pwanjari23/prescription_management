@@ -147,8 +147,8 @@ export default function PrescriptionPreview() {
           className="bg-white mx-auto font-sans text-slate-900 shadow-md border border-slate-200"
           style={{
             width: '794px',
-            minHeight: '1123px',
-            padding: '36px 44px',
+            minHeight: '960px',
+            padding: '24px 32px',
             boxSizing: 'border-box',
             fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
             color: '#111827',
