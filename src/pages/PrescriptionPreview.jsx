@@ -1,18 +1,22 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Printer, Download, Edit, Loader2, MapPin, Phone, Globe } from 'lucide-react';
+import { ArrowLeft, Printer, Download, Edit, Loader2 } from 'lucide-react';
 import { useRef, useState } from 'react';
-import { prescriptions } from '../data/prescriptions';
-import { patients } from '../data/patients';
-import { currentDoctor } from '../data/doctors';
+import { mockPrescriptions, mockPatients, currentDoctor } from '../data/mockData';
 
 /* ─── helpers ─────────────────────────────────────────────────────────── */
-const formatDate = (d) =>
-  new Date(d).toLocaleDateString('en-GB', {
-    weekday: 'long', day: '2-digit', month: 'short', year: 'numeric',
-  });
+const formatDate = (d) => {
+  if (!d) return '01 Sep 2026';
+  try {
+    const dt = new Date(d);
+    return isNaN(dt.getTime()) ? '01 Sep 2026' : dt.toLocaleDateString('en-GB', {
+      weekday: 'long', day: '2-digit', month: 'short', year: 'numeric',
+    });
+  } catch {
+    return '01 Sep 2026';
+  }
+};
 
-/* Convert frequency string → M - N - E - N grid format
-   e.g. "Twice Daily" → "1 - 0 - 1" */
+/* Convert frequency string → M - N - E - N grid format */
 const freqToMNEN = (freq) => {
   const map = {
     'Once Daily':         '1 - 0 - 0',
@@ -26,22 +30,27 @@ const freqToMNEN = (freq) => {
     'At Bedtime':         '0 - 0 - 1',
     'Before Meals':       '1 - 0 - 0',
     'After Meals':        '1 - 0 - 1',
+    '1-0-1':              '1 - 0 - 1',
+    '1-0-0':              '1 - 0 - 0',
+    '0-0-1':              '0 - 0 - 1',
+    '1-1-1':              '1 - 1 - 1',
   };
-  return map[freq] || '1 - 0 - 0';
+  return map[freq] || freq || '1 - 0 - 0';
 };
 
 /* Convert medicine dosage string to detail string e.g. "TABLET | Once a day" */
 const getMedicineDetailsText = (m) => {
   const form = m.dosage && m.dosage.toLowerCase().includes('capsule') ? 'CAPSULE' : 'TABLET';
-  const freqText = m.frequency === 'Twice Daily' ? 'Twice a day'
-    : m.frequency === 'At Bedtime' ? 'Once a day (Night)'
-    : m.frequency === 'Three Times Daily' ? 'Thrice a day'
+  const freqText = m.frequency === 'Twice Daily' || m.frequency === '1-0-1' ? 'Twice a day'
+    : m.frequency === 'At Bedtime' || m.frequency === '0-0-1' ? 'Once a day (Night)'
+    : m.frequency === 'Three Times Daily' || m.frequency === '1-1-1' ? 'Thrice a day'
     : 'Once a day';
   return `${form} | ${freqText}`;
 };
 
 /* Generic active ingredient composition mapper for demo medicines */
 const getCompositionText = (medName) => {
+  if (!medName) return 'PARACETAMOL (500 MG)';
   const nameUpper = medName.toUpperCase();
   if (nameUpper.includes('ASPIRIN') || nameUpper.includes('ECOSPRIN')) return 'ASPIRIN (75 MG)';
   if (nameUpper.includes('ATORVASTATIN') || nameUpper.includes('ATORVA')) return 'ATORVASTATIN (20 MG)';
@@ -77,6 +86,7 @@ export default function PrescriptionPreview() {
   const patientAge = patient.age || 56;
   const patientGender = patient.gender || 'Male';
   const patientPhone = (patient.phone || '9823012345').replace(/X/g, '9');
+  const patientAllergies = Array.isArray(patient.allergies) ? patient.allergies : [];
   const medicinesList = Array.isArray(rx.medicines) ? rx.medicines : [];
 
   /* ── PDF Download via html2canvas + jspdf ── */
@@ -98,50 +108,52 @@ export default function PrescriptionPreview() {
       const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
 
       const pdfW = pdf.internal.pageSize.getWidth();
-      const pdfH = pdf.internal.pageSize.getHeight();
-      const ratio = canvas.height / canvas.width;
-      const imgH  = pdfW * ratio;
+      const pdfH = (canvas.height * pdfW) / canvas.width;
 
-      let remaining = imgH;
-      let page = 0;
-
-      while (remaining > 0) {
-        if (page > 0) pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, -page * pdfH, pdfW, imgH);
-        remaining -= pdfH;
-        page++;
-      }
-
-      pdf.save(`${rx.id}_${patient.name.replace(/\s+/g, '_')}.pdf`);
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfW, pdfH);
+      pdf.save(`Prescription_${rxId}.pdf`);
     } catch (err) {
-      console.error('PDF generation failed:', err);
-      alert('PDF download failed. Try printing instead.');
+      console.error('PDF generation error:', err);
+      window.print();
     } finally {
       setDownloading(false);
     }
   };
 
-  const handlePrint = () => window.print();
-
   return (
-    <div className="space-y-4">
-      {/* Controls bar */}
-      <div className="no-print flex flex-wrap items-center justify-between gap-3">
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors"
-        >
-          <ArrowLeft size={16} /> Back to Prescription
-        </button>
-        <div className="flex gap-2 flex-wrap">
-          <button onClick={() => navigate(`/prescriptions/${rx.id}`)} className="btn-secondary">
-            <Edit size={15} /> Edit
+    <div className="space-y-4 w-full">
+      {/* ── TOP ACTION BAR (Hidden on Print) ─────────────────────────────────── */}
+      <div className="no-print flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors font-semibold"
+          >
+            <ArrowLeft size={16} /> Back
           </button>
-          <button onClick={handlePrint} className="btn-secondary">
-            <Printer size={15} /> Print
+          <div className="h-4 w-px bg-slate-200" />
+          <span className="text-sm font-bold text-slate-900 font-mono">{rxId}</span>
+          <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+            {rx.status || 'Finalized'}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate(`/prescriptions/new?patient=${patient.id || 'PT-00124'}`)}
+            className="btn-secondary btn-sm"
+          >
+            <Edit size={14} /> New Rx
           </button>
-          <button onClick={handleDownloadPDF} disabled={downloading} className="btn-primary">
-            {downloading ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />}
+          <button onClick={() => window.print()} className="btn-secondary btn-sm">
+            <Printer size={14} /> Print
+          </button>
+          <button
+            onClick={handleDownloadPDF}
+            disabled={downloading}
+            className="btn-primary btn-sm flex items-center gap-1.5"
+          >
+            {downloading ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
             {downloading ? 'Generating PDF...' : 'Download PDF'}
           </button>
         </div>
@@ -173,14 +185,12 @@ export default function PrescriptionPreview() {
             <div style={{ textAlign: 'center', flexShrink: 0 }}>
               <div style={{ width: '64px', height: '58px', position: 'relative', margin: '0 auto' }}>
                 <svg viewBox="0 0 100 90" style={{ width: '100%', height: '100%' }}>
-                  {/* Outer Red Heart */}
                   <path
                     d="M 50 85 C 10 50, 0 25, 25 10 C 40 0, 50 20, 50 20 C 50 20, 60 0, 75 10 C 100 25, 90 50, 50 85 Z"
                     fill="none"
                     stroke="#D32F2F"
                     strokeWidth="5"
                   />
-                  {/* Pulse ECG Line */}
                   <path
                     d="M 10 45 L 35 45 L 42 25 L 50 65 L 58 35 L 65 45 L 90 45"
                     fill="none"
@@ -228,7 +238,7 @@ export default function PrescriptionPreview() {
                 </tr>
                 <tr>
                   <td style={{ padding: '1px 4px 1px 0', color: '#475569', fontWeight: 600 }}>Time</td>
-                  <td style={{ padding: '1px 0', fontWeight: 700 }}>: {rx.time}</td>
+                  <td style={{ padding: '1px 0', fontWeight: 700 }}>: {rx.time || '11:42 AM'}</td>
                 </tr>
                 <tr>
                   <td style={{ padding: '1px 4px 1px 0', color: '#475569', fontWeight: 600 }}>Consult Type</td>
@@ -253,13 +263,13 @@ export default function PrescriptionPreview() {
             Patient
           </h2>
           <p style={{ margin: '0 0 2px', fontSize: '12.5px', fontWeight: 700, color: '#0f172a' }}>
-            {patient.name}, {patient.gender}, {patient.age} Yrs
+            {patientName}, {patientGender}, {patientAge} Yrs
           </p>
           <p style={{ margin: '1px 0', fontSize: '11px', color: '#334155' }}>
-            Mobile: +91-{patient.phone.replace(/X/g, '9')}
+            Mobile: +91-{patientPhone}
           </p>
           <p style={{ margin: '1px 0', fontSize: '11px', color: '#334155' }}>
-            UHID: SSSH.000{patient.id.replace('PT-', '')}
+            UHID: SSSH.000{(patient.id || 'PT-00124').replace('PT-', '')}
           </p>
         </div>
 
@@ -283,7 +293,7 @@ export default function PrescriptionPreview() {
             Vitals (as declared by patient):
           </h2>
           <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#1e293b' }}>
-            <strong>Drug Allergies:</strong> {patient.allergies.length ? patient.allergies.join(', ') : 'Nil'}, <strong>Diet Allergies/Restrictions:</strong> Low salt diet
+            <strong>Drug Allergies:</strong> {patientAllergies.length ? patientAllergies.join(', ') : 'Nil'}, <strong>Diet Allergies/Restrictions:</strong> Low salt diet
           </p>
         </div>
 
@@ -317,7 +327,7 @@ export default function PrescriptionPreview() {
               </tr>
             </thead>
             <tbody>
-              {rx.medicines.map((m, i) => {
+              {medicinesList.map((m, i) => {
                 const mnen = freqToMNEN(m.frequency);
                 const detailsText = getMedicineDetailsText(m);
                 const composition = getCompositionText(m.name);
@@ -331,7 +341,7 @@ export default function PrescriptionPreview() {
                     {/* Medicine Name & Composition */}
                     <td style={{ padding: '8px', verticalAlign: 'top' }}>
                       <p style={{ margin: 0, fontWeight: 800, color: '#000000', fontSize: '11px', textTransform: 'uppercase' }}>
-                        {m.name.toUpperCase()} {m.strength ? m.strength.toUpperCase() : ''} TABLET
+                        {(m.name || 'MEDICINE').toUpperCase()} {m.strength ? m.strength.toUpperCase() : ''} TABLET
                       </p>
                       <p style={{ margin: '2px 0 0', color: '#64748b', fontSize: '9.5px', fontWeight: 500 }}>
                         Contains: {composition}
@@ -371,7 +381,7 @@ export default function PrescriptionPreview() {
           </table>
 
           {/* Table Legend Boxes */}
-          <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <div style={{ marginTop: '10px', display: 'flex', items: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <div style={{
               border: '1px solid #64748b', borderRadius: '4px', padding: '3px 8px',
               fontSize: '9.5px', fontWeight: 700, color: '#0f172a', backgroundColor: '#ffffff',
@@ -445,7 +455,7 @@ export default function PrescriptionPreview() {
               borderBottom: '1.5px solid #0f172a',
               display: 'flex',
               alignItems: 'center',
-              justify: 'center',
+              justifyContent: 'center',
               marginBottom: '4px'
             }}>
               <span style={{ fontFamily: 'cursive', fontSize: '16px', color: '#0F2D5E', fontStyle: 'italic', fontWeight: 700 }}>
