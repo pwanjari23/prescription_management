@@ -176,24 +176,39 @@ export default function NewPrescription() {
     setEditingRowIndex(null);
   };
 
-  const handleFinalize = async () => {
+  const handleFinalize = () => {
     setShowConfirm(false);
-    await new Promise(r => setTimeout(r, 600));
-    setSaved(true);
-    setTimeout(() => navigate('/prescriptions'), 1800);
-  };
+    
+    const targetId = repeatRx?.id || 'RX-2026-00128';
+    const newRx = {
+      id: targetId,
+      prescriptionId: targetId,
+      patientId: selectedPatient?.id || 'PT-00124',
+      patientName: selectedPatient?.name || 'Rahul Sharma',
+      doctorId: currentDoctor.id || 'D001',
+      doctor: currentDoctor.name,
+      doctorName: currentDoctor.name,
+      date: new Date().toISOString().split('T')[0],
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      status: 'Finalized',
+      chiefComplaint: form.chiefComplaint,
+      diagnosis: form.diagnosis,
+      vitals: { bp: form.bp, pulse: form.pulse, spo2: form.spo2, temp: form.temp },
+      medicines: medicines,
+      advice: form.advice,
+      followUp: form.followUp,
+      followUpUnit: form.followUpUnit,
+    };
 
-  if (saved) {
-    return (
-      <div className="flex flex-col items-center justify-center py-16">
-        <div className="w-14 h-14 bg-emerald-100 rounded-full flex items-center justify-center mb-3">
-          <CheckCircle size={28} className="text-emerald-600" />
-        </div>
-        <h2 className="text-lg font-bold text-slate-900 mb-1">Prescription Finalized!</h2>
-        <p className="text-slate-500 text-xs">Saving to patient history and redirecting...</p>
-      </div>
-    );
-  }
+    const existingIdx = mockPrescriptions.findIndex(p => p && p.id === targetId);
+    if (existingIdx >= 0) {
+      mockPrescriptions[existingIdx] = newRx;
+    } else {
+      mockPrescriptions.unshift(newRx);
+    }
+
+    navigate(`/prescriptions/${targetId}/preview`);
+  };
 
   return (
     <div className="space-y-4 w-full">
@@ -209,7 +224,7 @@ export default function NewPrescription() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => navigate('/prescriptions/RX-2026-00128/preview')} className="btn-secondary btn-sm">
+          <button onClick={() => navigate(`/prescriptions/${repeatRx?.id || 'RX-2026-00128'}/preview`)} className="btn-secondary btn-sm">
             <Eye size={14} /> Preview
           </button>
           <button onClick={() => setShowConfirm(true)} className="btn-success btn-sm">
