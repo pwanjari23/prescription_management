@@ -39,7 +39,7 @@ export default function AddPatient() {
   }
 
   return (
-    <div className="space-y-5 max-w-3xl">
+    <div className="space-y-5 w-full">
       <button onClick={() => navigate('/patients')} className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900">
         <ArrowLeft size={16} /> Back to Patients
       </button>
