@@ -70,17 +70,12 @@ export default function NewPrescription() {
 
   const [editingRowIndex, setEditingRowIndex] = useState(null);
   const [rowDraft, setRowDraft] = useState({ ...emptyRowDefault });
-  const [medicineSearchQuery, setMedicineSearchQuery] = useState('');
+  const [selectedCatalogId, setSelectedCatalogId] = useState('');
   const [showConfirm, setShowConfirm] = useState(false);
   const [saved, setSaved] = useState(false);
 
   const filteredPatients = mockPatients.filter(p =>
     p.name.toLowerCase().includes(patientSearch.toLowerCase()) || p.id.toLowerCase().includes(patientSearch.toLowerCase())
-  );
-
-  const filteredMedicineList = mockMedicines.filter(m =>
-    m.medicineName.toLowerCase().includes(medicineSearchQuery.toLowerCase()) ||
-    m.name.toLowerCase().includes(medicineSearchQuery.toLowerCase())
   );
 
   const handleAddNewRow = () => {
@@ -100,35 +95,54 @@ export default function NewPrescription() {
     setMedicines(prev => [...prev, newRow]);
     setEditingRowIndex(newIdx);
     setRowDraft(newRow);
-    setMedicineSearchQuery('');
+    setSelectedCatalogId(defaultMed.id || '');
   };
 
   const handleStartEditRow = (index) => {
     setEditingRowIndex(index);
     setRowDraft({ ...medicines[index] });
-    setMedicineSearchQuery('');
+    const matched = mockMedicines.find(m => m.name.toLowerCase() === medicines[index].name.toLowerCase());
+    setSelectedCatalogId(matched ? matched.id : 'custom');
   };
 
-  const handleSelectMedicineFromSuggest = (med) => {
-    setRowDraft(rd => ({
-      ...rd,
-      name: med.name,
-      strength: med.strength,
-      dosage: med.dosage || '1 tablet',
-      frequency: med.frequency || '1-0-1',
-      duration: med.duration || '5',
-      durationUnit: med.durationUnit || 'Days',
-      foodTiming: med.foodTiming || 'After food',
-      instructions: med.instructions || 'Take with water',
-    }));
-    setMedicineSearchQuery('');
+  const handleDropdownSelectMedicine = (e) => {
+    const val = e.target.value;
+    setSelectedCatalogId(val);
+    if (val === 'custom') {
+      setRowDraft(rd => ({
+        ...rd,
+        name: '',
+        strength: '',
+        dosage: '1 tablet',
+        frequency: '1-0-1',
+        duration: '5',
+        durationUnit: 'Days',
+        foodTiming: 'After food',
+        instructions: 'Take with water',
+      }));
+      return;
+    }
+
+    const med = mockMedicines.find(m => m.id === val);
+    if (med) {
+      setRowDraft(rd => ({
+        ...rd,
+        name: med.name,
+        strength: med.strength,
+        dosage: med.dosage || '1 tablet',
+        frequency: med.frequency || '1-0-1',
+        duration: med.duration || '5',
+        durationUnit: med.durationUnit || 'Days',
+        foodTiming: med.foodTiming || 'After food',
+        instructions: med.instructions || 'Take with water',
+      }));
+    }
   };
 
   const handleSaveRow = (index) => {
     if (!rowDraft.name) return;
     setMedicines(prev => prev.map((m, idx) => (idx === index ? { ...rowDraft } : m)));
     setEditingRowIndex(null);
-    setMedicineSearchQuery('');
   };
 
   const handleRemoveRow = (index) => {
@@ -143,7 +157,6 @@ export default function NewPrescription() {
       setMedicines(prev => prev.filter((_, idx) => idx !== index));
     }
     setEditingRowIndex(null);
-    setMedicineSearchQuery('');
   };
 
   const handleFinalize = async () => {
@@ -175,7 +188,7 @@ export default function NewPrescription() {
           </button>
           <div>
             <h1 className="text-xl font-bold text-slate-900 leading-tight">Create Prescription</h1>
-            <p className="text-xs text-slate-500">Quick clinical entry &amp; medicine auto-fill</p>
+            <p className="text-xs text-slate-500">Select medicine from dropdown or type custom medicine name</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -188,9 +201,9 @@ export default function NewPrescription() {
         </div>
       </div>
 
-      {/* Compact Top Grid: Patient & Doctor Info + Clinical Info Side-by-Side */}
+      {/* Compact Top Grid: Patient & Doctor Info + Clinical Info */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Left Card: Patient & Doctor Selection */}
+        {/* Left Card: Patient Selector */}
         <div className="card p-4 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-2">
@@ -251,7 +264,6 @@ export default function NewPrescription() {
             )}
           </div>
 
-          {/* Doctor Banner Footer */}
           <div className="mt-3 pt-3 border-t border-slate-100 flex items-center gap-2 text-xs text-slate-600">
             <Stethoscope size={13} className="text-emerald-600 flex-shrink-0" />
             <span className="truncate"><strong>{currentDoctor.name}</strong> ({currentDoctor.qualification}) · Reg: {currentDoctor.regNumber}</span>
@@ -288,7 +300,7 @@ export default function NewPrescription() {
             </div>
           </div>
 
-          {/* Vitals Compact Grid */}
+          {/* Vitals Grid */}
           <div className="grid grid-cols-4 gap-2 pt-1">
             {[
               { key: 'bp', label: 'BP', placeholder: '120/80' },
@@ -316,7 +328,7 @@ export default function NewPrescription() {
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Pill size={15} className="text-purple-600" />
-            <h2 className="text-xs font-bold text-slate-900">Medicines Prescribed ({medicines.length})</h2>
+            <h2 className="text-xs font-bold text-slate-900">Prescribed Medicines ({medicines.length})</h2>
           </div>
           <button onClick={handleAddNewRow} className="btn-primary btn-sm py-1">
             <Plus size={13} /> Add Medicine
@@ -329,7 +341,7 @@ export default function NewPrescription() {
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
                 <th className="py-2 px-2.5 w-8">#</th>
-                <th className="py-2 px-2.5 min-w-[200px]">Medicine Search &amp; Selection</th>
+                <th className="py-2 px-2.5 min-w-[240px]">Select Medicine / Custom Name</th>
                 <th className="py-2 px-2.5 w-24">Dosage</th>
                 <th className="py-2 px-2.5 w-24">Frequency</th>
                 <th className="py-2 px-2.5 w-28">Duration</th>
@@ -346,35 +358,34 @@ export default function NewPrescription() {
                   return (
                     <tr key={i} className="bg-amber-50/60 border-y-2 border-amber-300">
                       <td className="py-1.5 px-2.5 font-bold text-slate-700 align-middle">{i + 1}</td>
-                      <td className="py-1.5 px-2.5 align-top">
-                        <div className="relative">
-                          <input
-                            type="text"
-                            className="form-input text-xs py-1 font-bold"
-                            placeholder="Search medicine (e.g. Para)..."
-                            value={rowDraft.name}
-                            onChange={e => {
-                              const val = e.target.value;
-                              setRowDraft(rd => ({ ...rd, name: val }));
-                              setMedicineSearchQuery(val);
-                            }}
-                          />
-                          {medicineSearchQuery && filteredMedicineList.length > 0 && (
-                            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-xl z-20 max-h-40 overflow-y-auto">
-                              {filteredMedicineList.map(item => (
-                                <div
-                                  key={item.id}
-                                  className="px-3 py-1.5 hover:bg-slate-50 cursor-pointer border-b border-slate-50"
-                                  onClick={() => handleSelectMedicineFromSuggest(item)}
-                                >
-                                  <p className="font-bold text-slate-900 text-xs">{item.medicineName}</p>
-                                  <p className="text-[10px] text-slate-500">{item.dosage} · {item.frequency}</p>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
+                      
+                      {/* Medicine Selection: Dropdown List + Custom Name Input */}
+                      <td className="py-1.5 px-2.5 align-top space-y-1.5">
+                        {/* Dropdown list of catalog medicines */}
+                        <select
+                          className="form-select text-xs py-1 font-bold text-slate-900 border-primary-900/30"
+                          value={selectedCatalogId}
+                          onChange={handleDropdownSelectMedicine}
+                        >
+                          <option value="">-- Select from Medicine Dropdown --</option>
+                          {mockMedicines.map(med => (
+                            <option key={med.id} value={med.id}>
+                              {med.medicineName} ({med.category})
+                            </option>
+                          ))}
+                          <option value="custom">✏ Custom Medicine (Type Below)</option>
+                        </select>
+
+                        {/* Editable Custom Medicine Name Input */}
+                        <input
+                          type="text"
+                          className="form-input text-xs py-1 bg-white font-semibold"
+                          placeholder="Medicine name (or type custom)..."
+                          value={rowDraft.name}
+                          onChange={e => setRowDraft(rd => ({ ...rd, name: e.target.value }))}
+                        />
                       </td>
+
                       <td className="py-1.5 px-2.5 align-top">
                         <input
                           type="text"
@@ -432,11 +443,12 @@ export default function NewPrescription() {
                         />
                       </td>
                       <td className="py-1.5 px-2.5 text-right align-top">
-                        <div className="flex items-center justify-end gap-1">
+                        <div className="flex items-center justify-end gap-1 pt-1">
                           <button
                             type="button"
                             onClick={() => handleSaveRow(i)}
                             className="p-1 bg-emerald-600 text-white rounded hover:bg-emerald-700"
+                            title="Save Medicine Row"
                           >
                             <Check size={13} />
                           </button>
@@ -444,6 +456,7 @@ export default function NewPrescription() {
                             type="button"
                             onClick={() => handleCancelRowEdit(i)}
                             className="p-1 bg-slate-200 text-slate-600 rounded hover:bg-slate-300"
+                            title="Cancel"
                           >
                             <X size={13} />
                           </button>
@@ -457,7 +470,7 @@ export default function NewPrescription() {
                   <tr key={i} className="hover:bg-slate-50">
                     <td className="py-2.5 px-2.5 font-semibold text-slate-400">{i + 1}</td>
                     <td className="py-2.5 px-2.5">
-                      <p className="font-bold text-slate-900 text-xs">{m.name} {m.strength}</p>
+                      <p className="font-bold text-slate-900 text-xs">{m.name} {m.strength ? `(${m.strength})` : ''}</p>
                     </td>
                     <td className="py-2.5 px-2.5 text-slate-700">{m.dosage}</td>
                     <td className="py-2.5 px-2.5">
@@ -474,6 +487,7 @@ export default function NewPrescription() {
                           type="button"
                           onClick={() => handleStartEditRow(i)}
                           className="p-1 text-slate-600 hover:bg-slate-100 rounded"
+                          title="Edit Row"
                         >
                           <Edit2 size={13} />
                         </button>
@@ -481,6 +495,7 @@ export default function NewPrescription() {
                           type="button"
                           onClick={() => handleRemoveRow(i)}
                           className="p-1 text-red-500 hover:bg-red-50 rounded"
+                          title="Remove Row"
                         >
                           <Trash2 size={13} />
                         </button>
@@ -494,7 +509,7 @@ export default function NewPrescription() {
         </div>
       </div>
 
-      {/* Advice & Follow-Up Compact Grid */}
+      {/* Advice & Follow-Up Row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 card p-4">
         <div className="sm:col-span-2">
           <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Doctor's Advice</label>
