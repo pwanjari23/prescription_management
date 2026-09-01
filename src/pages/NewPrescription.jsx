@@ -1,85 +1,111 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, Plus, Trash2, ChevronDown, X, CheckCircle, Save, Eye,
-  User, Stethoscope, Pill, FileText, Activity
+  ArrowLeft, Plus, Trash2, CheckCircle, Save, Eye,
+  User, Stethoscope, Pill, FileText, Activity, Check, X, Edit2
 } from 'lucide-react';
 import { patients } from '../data/patients';
 import { medicines as medicineList, frequencyOptions, routeOptions, durationUnits } from '../data/medicines';
 import { currentDoctor } from '../data/doctors';
 
-const newMedicineDefault = {
-  name: '', strength: '', dosage: '', frequency: 'Once Daily',
-  duration: '5', durationUnit: 'Days', route: 'Oral', instructions: '',
+const emptyRowDefault = {
+  name: '',
+  strength: '',
+  dosage: '1 tablet',
+  frequency: 'Once Daily',
+  duration: '30',
+  durationUnit: 'Days',
+  route: 'Oral',
+  instructions: 'After food',
 };
 
 export default function NewPrescription() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const patientIdParam = searchParams.get('patient');
-
-  const [selectedPatient, setSelectedPatient] = useState(
-    patientIdParam ? patients.find(p => p.id === patientIdParam) : null
-  );
+  const [selectedPatient, setSelectedPatient] = useState(patients[0]);
+  const [showPatientDropdown, setShowPatientDropdown] = useState(false);
   const [patientSearch, setPatientSearch] = useState('');
-  const [showPatientDropdown, setShowPatientDropdown] = useState(!patientIdParam);
-  const [medicines, setMedicines] = useState([]);
-  const [showMedicineModal, setShowMedicineModal] = useState(false);
-  const [currentMedicine, setCurrentMedicine] = useState({ ...newMedicineDefault });
-  const [editingIndex, setEditingIndex] = useState(null);
-  const [medicineSearch, setMedicineSearch] = useState('');
 
   const [form, setForm] = useState({
-    chiefComplaint: '',
-    diagnosis: '',
-    bp: '', pulse: '', spo2: '', temp: '',
-    advice: '',
+    chiefComplaint: 'Chest discomfort on exertion since 2 weeks',
+    diagnosis: 'Stable Angina, Hypertension',
+    bp: '132/86',
+    pulse: '74',
+    spo2: '97',
+    temp: '98.6',
+    advice: 'Avoid oily and spicy food. Walk daily for 30 minutes. Take medicines regularly.',
     followUp: '30',
     followUpUnit: 'Days',
   });
 
-  const [saved, setSaved] = useState(false);
+  /* ── Medicines state with inline table row editing ── */
+  const [medicines, setMedicines] = useState([
+    { name: 'ASPIRIN', strength: '75 MG', dosage: '1 tablet', frequency: 'Once Daily', duration: '30', durationUnit: 'Days', route: 'Oral', instructions: 'After food' },
+    { name: 'ATORVASTATIN', strength: '20 MG', dosage: '1 tablet', frequency: 'At Bedtime', duration: '30', durationUnit: 'Days', route: 'Oral', instructions: 'At bedtime' },
+  ]);
+
+  // Index of row currently being edited inline, or 'new' for a newly added row
+  const [editingRowIndex, setEditingRowIndex] = useState(null);
+  const [rowDraft, setRowDraft] = useState({ ...emptyRowDefault });
+  const [medicineSearchQuery, setMedicineSearchQuery] = useState('');
+
   const [showConfirm, setShowConfirm] = useState(false);
+  const [saved, setSaved] = useState(false);
 
-  const filteredPatients = patients.filter(p => {
-    const q = patientSearch.toLowerCase();
-    return p.name.toLowerCase().includes(q) || p.id.toLowerCase().includes(q);
-  });
-
-  const filteredMedicines = medicineList.filter(m =>
-    m.name.toLowerCase().includes(medicineSearch.toLowerCase())
+  const filteredPatients = patients.filter(p =>
+    p.name.toLowerCase().includes(patientSearch.toLowerCase()) || p.id.toLowerCase().includes(patientSearch.toLowerCase())
   );
 
-  const handleAddMedicine = () => {
-    if (!currentMedicine.name) return;
-    if (editingIndex !== null) {
-      setMedicines(prev => prev.map((m, i) => i === editingIndex ? currentMedicine : m));
-      setEditingIndex(null);
-    } else {
-      setMedicines(prev => [...prev, currentMedicine]);
-    }
-    setCurrentMedicine({ ...newMedicineDefault });
-    setMedicineSearch('');
-    setShowMedicineModal(false);
+  const filteredMedicineList = medicineList.filter(m =>
+    m.name.toLowerCase().includes(medicineSearchQuery.toLowerCase())
+  );
+
+  /* ── Add new inline row ── */
+  const handleAddNewRow = () => {
+    const newIdx = medicines.length;
+    setMedicines(prev => [...prev, { ...emptyRowDefault }]);
+    setEditingRowIndex(newIdx);
+    setRowDraft({ ...emptyRowDefault });
+    setMedicineSearchQuery('');
   };
 
-  const handleRemoveMedicine = (i) => setMedicines(prev => prev.filter((_, idx) => idx !== i));
-  const handleEditMedicine = (i) => { setCurrentMedicine({ ...medicines[i] }); setEditingIndex(i); setShowMedicineModal(true); };
+  /* ── Edit existing inline row ── */
+  const handleStartEditRow = (index) => {
+    setEditingRowIndex(index);
+    setRowDraft({ ...medicines[index] });
+    setMedicineSearchQuery('');
+  };
 
-  const handleUseTemplate = (template) => {
-    setMedicines(template.medicines.map(m => ({ ...m })));
-    setForm(f => ({ ...f, advice: template.advice, followUp: template.followUp, followUpUnit: template.followUpUnit }));
+  /* ── Save inline row changes ── */
+  const handleSaveRow = (index) => {
+    if (!rowDraft.name) return;
+    setMedicines(prev => prev.map((m, idx) => (idx === index ? { ...rowDraft } : m)));
+    setEditingRowIndex(null);
+    setMedicineSearchQuery('');
+  };
+
+  /* ── Delete row ── */
+  const handleRemoveRow = (index) => {
+    setMedicines(prev => prev.filter((_, idx) => idx !== index));
+    if (editingRowIndex === index) {
+      setEditingRowIndex(null);
+    }
+  };
+
+  /* ── Cancel row editing ── */
+  const handleCancelRowEdit = (index) => {
+    if (!medicines[index].name) {
+      // If it was a newly added empty row, remove it
+      setMedicines(prev => prev.filter((_, idx) => idx !== index));
+    }
+    setEditingRowIndex(null);
+    setMedicineSearchQuery('');
   };
 
   const handleFinalize = async () => {
     setShowConfirm(false);
-    await new Promise(r => setTimeout(r, 800));
+    await new Promise(r => setTimeout(r, 600));
     setSaved(true);
-    setTimeout(() => navigate('/prescriptions'), 2000);
-  };
-
-  const handlePreview = () => {
-    navigate('/prescriptions/RX-2026-00128/preview');
+    setTimeout(() => navigate('/prescriptions'), 1800);
   };
 
   if (saved) {
@@ -95,14 +121,24 @@ export default function NewPrescription() {
   }
 
   return (
-    <div className="space-y-5 max-w-4xl">
+    <div className="space-y-5 max-w-5xl">
       <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900">
         <ArrowLeft size={16} /> Back
       </button>
 
-      <div className="page-header mb-0">
-        <h1 className="page-title">Create New Prescription</h1>
-        <p className="page-subtitle">Fill in the clinical details to generate a prescription</p>
+      <div className="page-header mb-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h1 className="page-title">Create New Prescription</h1>
+          <p className="page-subtitle">Fill in clinical details and add medicines directly in the table</p>
+        </div>
+        <div className="flex gap-2">
+          <button onClick={() => navigate('/prescriptions/RX-2026-00128/preview')} className="btn-secondary">
+            <Eye size={15} /> Preview Sheet
+          </button>
+          <button onClick={() => setShowConfirm(true)} className="btn-success">
+            <Save size={15} /> Finalize Rx
+          </button>
+        </div>
       </div>
 
       {/* Patient Selector */}
@@ -111,11 +147,11 @@ export default function NewPrescription() {
           <div className="w-7 h-7 bg-blue-50 rounded-lg flex items-center justify-center">
             <User size={14} className="text-blue-600" />
           </div>
-          <h2 className="text-sm font-semibold text-slate-900">Patient</h2>
+          <h2 className="text-sm font-semibold text-slate-900">Patient Details</h2>
         </div>
 
         {selectedPatient ? (
-          <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
+          <div className="flex items-start justify-between gap-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
                 <span className="text-primary-900 text-sm font-bold">
@@ -123,20 +159,14 @@ export default function NewPrescription() {
                 </span>
               </div>
               <div>
-                <p className="font-semibold text-slate-900">{selectedPatient.name}</p>
-                <p className="text-xs text-slate-500">
-                  ID: <span className="font-mono">{selectedPatient.id}</span>
-                  <span className="mx-1.5 text-slate-300">·</span>
-                  Age {selectedPatient.age}
-                  <span className="mx-1.5 text-slate-300">·</span>
-                  {selectedPatient.gender}
-                </p>
+                <p className="font-semibold text-slate-900 text-sm">{selectedPatient.name}</p>
+                <p className="text-xs text-slate-500 font-mono">{selectedPatient.id} · {selectedPatient.gender}, {selectedPatient.age} Yrs · {selectedPatient.phone}</p>
+                {selectedPatient.allergies && selectedPatient.allergies.length > 0 && (
+                  <p className="text-xs text-amber-700 font-medium mt-0.5">⚠ Allergies: {selectedPatient.allergies.join(', ')}</p>
+                )}
               </div>
             </div>
-            <button
-              onClick={() => { setSelectedPatient(null); setShowPatientDropdown(true); }}
-              className="text-xs text-slate-500 hover:text-slate-700 underline"
-            >
+            <button onClick={() => setSelectedPatient(null)} className="text-xs text-primary-900 font-medium hover:underline">
               Change
             </button>
           </div>
@@ -187,7 +217,6 @@ export default function NewPrescription() {
             <div>
               <p className="font-semibold text-slate-900 text-sm">{currentDoctor.name}</p>
               <p className="text-xs text-slate-500">{currentDoctor.qualification} · Reg: {currentDoctor.regNumber}</p>
-              <p className="text-xs text-slate-500">Shree Swami Samarth Hospital, Nagpur</p>
             </div>
           </div>
         </div>
@@ -249,14 +278,16 @@ export default function NewPrescription() {
         </div>
       </div>
 
-      {/* Medicines */}
+      {/* ════════════════════════════════════════════════════════════════════════ */}
+      {/* ── MEDICINES TABLE WITH DIRECT INLINE ENTRY (NO MODAL POPUP) ──────────── */}
+      {/* ════════════════════════════════════════════════════════════════════════ */}
       <div className="card p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 bg-purple-50 rounded-lg flex items-center justify-center">
               <Pill size={14} className="text-purple-600" />
             </div>
-            <h2 className="text-sm font-semibold text-slate-900">Medicines</h2>
+            <h2 className="text-sm font-semibold text-slate-900">Medicines Prescribed</h2>
             {medicines.length > 0 && (
               <span className="px-2 py-0.5 bg-primary-100 text-primary-900 rounded-full text-xs font-semibold">
                 {medicines.length}
@@ -264,57 +295,222 @@ export default function NewPrescription() {
             )}
           </div>
           <button
-            onClick={() => { setCurrentMedicine({ ...newMedicineDefault }); setEditingIndex(null); setShowMedicineModal(true); }}
+            onClick={handleAddNewRow}
             className="btn-primary btn-sm"
           >
-            <Plus size={14} /> Add Medicine
+            <Plus size={14} /> Add Medicine (New Row)
           </button>
         </div>
 
-        {medicines.length === 0 ? (
-          <div className="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center">
-            <Pill size={28} className="mx-auto text-slate-300 mb-2" />
-            <p className="text-sm text-slate-500">No medicines added yet</p>
-            <p className="text-xs text-slate-400">Click "Add Medicine" or use a template above</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {medicines.map((m, i) => (
-              <div key={i} className="flex items-center gap-3 p-3.5 bg-slate-50 rounded-xl border border-slate-100 hover:border-slate-200 transition-all">
-                <div className="w-8 h-8 bg-primary-900 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <span className="text-white text-[10px] font-bold">{i + 1}</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-semibold text-slate-900 text-sm">{m.name}</p>
-                    <span className="text-xs px-1.5 py-0.5 bg-slate-200 text-slate-600 rounded">{m.strength}</span>
-                  </div>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    {m.dosage} · {m.frequency} · {m.duration} {m.durationUnit}
-                    {m.instructions && <span className="text-slate-400"> · {m.instructions}</span>}
-                  </p>
-                </div>
-                <div className="flex gap-2 flex-shrink-0">
-                  <button onClick={() => handleEditMedicine(i)} className="p-1.5 hover:bg-slate-200 rounded-md transition-colors text-slate-500">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                  </button>
-                  <button onClick={() => handleRemoveMedicine(i)} className="p-1.5 hover:bg-red-50 rounded-md transition-colors text-red-500">
-                    <Trash2 size={13} />
-                  </button>
-                </div>
-              </div>
-            ))}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
+                <th className="py-2.5 px-3 w-10">#</th>
+                <th className="py-2.5 px-3 min-w-[200px]">Medicine Name &amp; Strength</th>
+                <th className="py-2.5 px-3 w-28">Dosage</th>
+                <th className="py-2.5 px-3 w-36">Frequency</th>
+                <th className="py-2.5 px-3 w-36">Duration</th>
+                <th className="py-2.5 px-3 min-w-[140px]">Instructions</th>
+                <th className="py-2.5 px-3 w-24 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {medicines.map((m, i) => {
+                const isEditing = editingRowIndex === i;
+
+                if (isEditing) {
+                  return (
+                    <tr key={i} className="bg-amber-50/50 border-2 border-amber-300 animate-fade-in">
+                      <td className="py-2 px-3 font-semibold text-slate-700 align-top pt-3">{i + 1}</td>
+
+                      {/* Inline Medicine Name + Auto-suggest */}
+                      <td className="py-2 px-3 align-top">
+                        <div className="relative">
+                          <input
+                            type="text"
+                            className="form-input text-xs font-semibold uppercase"
+                            placeholder="Type or select medicine..."
+                            value={rowDraft.name}
+                            onChange={e => {
+                              const val = e.target.value;
+                              setRowDraft(rd => ({ ...rd, name: val }));
+                              setMedicineSearchQuery(val);
+                            }}
+                          />
+                          {medicineSearchQuery && filteredMedicineList.length > 0 && (
+                            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-xl z-20 max-h-40 overflow-y-auto">
+                              {filteredMedicineList.slice(0, 6).map(item => (
+                                <div
+                                  key={item.id}
+                                  className="px-3 py-1.5 hover:bg-slate-50 cursor-pointer"
+                                  onClick={() => {
+                                    setRowDraft(rd => ({ ...rd, name: item.name, strength: item.strength }));
+                                    setMedicineSearchQuery('');
+                                  }}
+                                >
+                                  <p className="font-semibold text-slate-900 text-xs">{item.name}</p>
+                                  <p className="text-[10px] text-slate-400">{item.strength} · {item.form}</p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <input
+                          type="text"
+                          className="form-input text-[11px] mt-1 text-slate-500"
+                          placeholder="Strength (e.g. 75 MG)"
+                          value={rowDraft.strength}
+                          onChange={e => setRowDraft(rd => ({ ...rd, strength: e.target.value }))}
+                        />
+                      </td>
+
+                      {/* Dosage */}
+                      <td className="py-2 px-3 align-top">
+                        <input
+                          type="text"
+                          className="form-input text-xs"
+                          placeholder="e.g. 1 tablet"
+                          value={rowDraft.dosage}
+                          onChange={e => setRowDraft(rd => ({ ...rd, dosage: e.target.value }))}
+                        />
+                      </td>
+
+                      {/* Frequency */}
+                      <td className="py-2 px-3 align-top">
+                        <select
+                          className="form-select text-xs"
+                          value={rowDraft.frequency}
+                          onChange={e => setRowDraft(rd => ({ ...rd, frequency: e.target.value }))}
+                        >
+                          {frequencyOptions.map(f => (
+                            <option key={f}>{f}</option>
+                          ))}
+                        </select>
+                      </td>
+
+                      {/* Duration */}
+                      <td className="py-2 px-3 align-top">
+                        <div className="flex gap-1">
+                          <input
+                            type="number"
+                            className="form-input text-xs w-14"
+                            min="1"
+                            value={rowDraft.duration}
+                            onChange={e => setRowDraft(rd => ({ ...rd, duration: e.target.value }))}
+                          />
+                          <select
+                            className="form-select text-xs"
+                            value={rowDraft.durationUnit}
+                            onChange={e => setRowDraft(rd => ({ ...rd, durationUnit: e.target.value }))}
+                          >
+                            {durationUnits.map(u => (
+                              <option key={u}>{u}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </td>
+
+                      {/* Instructions */}
+                      <td className="py-2 px-3 align-top">
+                        <input
+                          type="text"
+                          className="form-input text-xs"
+                          placeholder="e.g. After food"
+                          value={rowDraft.instructions}
+                          onChange={e => setRowDraft(rd => ({ ...rd, instructions: e.target.value }))}
+                        />
+                      </td>
+
+                      {/* Action buttons */}
+                      <td className="py-2 px-3 align-top text-right">
+                        <div className="flex items-center justify-end gap-1 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => handleSaveRow(i)}
+                            className="p-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md transition-colors"
+                            title="Save Row"
+                          >
+                            <Check size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleCancelRowEdit(i)}
+                            className="p-1.5 bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-md transition-colors"
+                            title="Cancel"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                }
+
+                // Normal Display Row
+                return (
+                  <tr key={i} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="py-3 px-3 font-medium text-slate-400">{i + 1}</td>
+                    <td className="py-3 px-3">
+                      <p className="font-bold text-slate-900 text-xs uppercase">{m.name}</p>
+                      <p className="text-[11px] text-slate-500">{m.strength || 'Standard'}</p>
+                    </td>
+                    <td className="py-3 px-3 text-slate-700">{m.dosage}</td>
+                    <td className="py-3 px-3">
+                      <span className="px-2 py-0.5 bg-blue-50 text-blue-800 rounded font-medium text-[11px]">
+                        {m.frequency}
+                      </span>
+                    </td>
+                    <td className="py-3 px-3 text-slate-700 font-medium">{m.duration} {m.durationUnit}</td>
+                    <td className="py-3 px-3 text-slate-600 italic text-[11px]">{m.instructions || 'After food'}</td>
+                    <td className="py-3 px-3 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleStartEditRow(i)}
+                          className="p-1.5 hover:bg-slate-100 text-slate-500 hover:text-slate-800 rounded-md transition-colors"
+                          title="Edit Row Inline"
+                        >
+                          <Edit2 size={13} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveRow(i)}
+                          className="p-1.5 hover:bg-red-50 text-red-500 rounded-md transition-colors"
+                          title="Remove Row"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {medicines.length === 0 && (
+          <div className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center mt-3">
+            <Pill size={24} className="mx-auto text-slate-300 mb-1" />
+            <p className="text-xs text-slate-500">No medicines in table</p>
+            <button
+              onClick={handleAddNewRow}
+              className="mt-2 text-xs font-semibold text-primary-900 hover:underline"
+            >
+              + Add First Medicine Row
+            </button>
           </div>
         )}
       </div>
 
-      {/* Notes & Follow-up */}
+      {/* Doctor's Advice & Follow-up */}
       <div className="card p-5">
         <div className="flex items-center gap-2 mb-4">
           <div className="w-7 h-7 bg-slate-100 rounded-lg flex items-center justify-center">
             <FileText size={14} className="text-slate-600" />
           </div>
-          <h2 className="text-sm font-semibold text-slate-900">Doctor's Advice & Follow-up</h2>
+          <h2 className="text-sm font-semibold text-slate-900">Doctor's Advice &amp; Follow-up</h2>
         </div>
         <div className="space-y-4">
           <div>
@@ -349,134 +545,13 @@ export default function NewPrescription() {
         </div>
       </div>
 
-      {/* Action Buttons */}
-      <div className="flex flex-wrap items-center gap-3 justify-end pb-4">
-        <button
-          onClick={() => navigate(-1)}
-          className="btn-secondary"
-        >
-          Cancel
-        </button>
-        <button className="btn-secondary">
-          <Save size={15} />
-          Save Draft
-        </button>
-        <button
-          onClick={handlePreview}
-          className="btn-secondary border-primary-200 text-primary-900 hover:bg-primary-50"
-        >
-          <Eye size={15} />
-          Preview Prescription
-        </button>
-        <button
-          onClick={() => setShowConfirm(true)}
-          className="btn-success"
-        >
-          <CheckCircle size={15} />
-          Finalize Prescription
-        </button>
-      </div>
-
-      {/* Add Medicine Modal */}
-      {showMedicineModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-lg shadow-xl animate-fade-in">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-              <h3 className="font-semibold text-slate-900">{editingIndex !== null ? 'Edit Medicine' : 'Add Medicine'}</h3>
-              <button onClick={() => setShowMedicineModal(false)} className="p-1 hover:bg-slate-100 rounded-md">
-                <X size={18} />
-              </button>
-            </div>
-            <div className="p-5 space-y-4">
-              <div>
-                <label className="form-label">Medicine Name <span className="text-red-500">*</span></label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="Search or type medicine name..."
-                    value={medicineSearch || currentMedicine.name}
-                    onChange={e => { setMedicineSearch(e.target.value); setCurrentMedicine(m => ({ ...m, name: e.target.value })); }}
-                  />
-                  {medicineSearch && filteredMedicines.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-10 max-h-40 overflow-y-auto">
-                      {filteredMedicines.slice(0, 6).map(m => (
-                        <div
-                          key={m.id}
-                          className="px-3 py-2.5 hover:bg-slate-50 cursor-pointer"
-                          onClick={() => {
-                            setCurrentMedicine(prev => ({ ...prev, name: m.name, strength: m.strength }));
-                            setMedicineSearch('');
-                          }}
-                        >
-                          <p className="text-sm font-medium text-slate-900">{m.name}</p>
-                          <p className="text-xs text-slate-400">{m.strength} · {m.form}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="form-label">Strength</label>
-                  <input type="text" className="form-input" placeholder="e.g. 500 mg" value={currentMedicine.strength}
-                    onChange={e => setCurrentMedicine(m => ({ ...m, strength: e.target.value }))} />
-                </div>
-                <div>
-                  <label className="form-label">Dosage</label>
-                  <input type="text" className="form-input" placeholder="e.g. 1 tablet" value={currentMedicine.dosage}
-                    onChange={e => setCurrentMedicine(m => ({ ...m, dosage: e.target.value }))} />
-                </div>
-                <div>
-                  <label className="form-label">Frequency</label>
-                  <select className="form-select" value={currentMedicine.frequency}
-                    onChange={e => setCurrentMedicine(m => ({ ...m, frequency: e.target.value }))}>
-                    {frequencyOptions.map(f => <option key={f}>{f}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="form-label">Route</label>
-                  <select className="form-select" value={currentMedicine.route}
-                    onChange={e => setCurrentMedicine(m => ({ ...m, route: e.target.value }))}>
-                    {routeOptions.map(r => <option key={r}>{r}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="form-label">Duration</label>
-                  <div className="flex gap-2">
-                    <input type="number" className="form-input w-16" value={currentMedicine.duration} min="1"
-                      onChange={e => setCurrentMedicine(m => ({ ...m, duration: e.target.value }))} />
-                    <select className="form-select" value={currentMedicine.durationUnit}
-                      onChange={e => setCurrentMedicine(m => ({ ...m, durationUnit: e.target.value }))}>
-                      {durationUnits.map(u => <option key={u}>{u}</option>)}
-                    </select>
-                  </div>
-                </div>
-                <div>
-                  <label className="form-label">Instructions</label>
-                  <input type="text" className="form-input" placeholder="e.g. After food" value={currentMedicine.instructions}
-                    onChange={e => setCurrentMedicine(m => ({ ...m, instructions: e.target.value }))} />
-                </div>
-              </div>
-            </div>
-            <div className="flex gap-2 px-5 pb-5 justify-end">
-              <button onClick={() => setShowMedicineModal(false)} className="btn-secondary">Cancel</button>
-              <button onClick={handleAddMedicine} className="btn-primary">
-                {editingIndex !== null ? 'Save Changes' : 'Add Medicine'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Confirm Finalize Modal */}
       {showConfirm && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-sm shadow-xl animate-fade-in p-6">
             <h3 className="font-semibold text-slate-900 mb-2">Finalize Prescription?</h3>
             <p className="text-sm text-slate-500 mb-5">
-              Once finalized, this prescription will be saved and cannot be easily edited. Please confirm.
+              Once finalized, this prescription will be saved to patient history. Confirm to proceed.
             </p>
             <div className="flex gap-3 justify-end">
               <button onClick={() => setShowConfirm(false)} className="btn-secondary">Cancel</button>
