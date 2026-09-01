@@ -1,13 +1,52 @@
 import { useState } from 'react';
-import { Plus, Search, Pill } from 'lucide-react';
-import { medicines } from '../data/medicines';
+import { Plus, Search, Pill, Check, X } from 'lucide-react';
+import { medicines as initialMedicines } from '../data/medicines';
 
 export default function Medicines() {
+  const [medicineList, setMedicineList] = useState(initialMedicines);
   const [search, setSearch] = useState('');
-  const [showAdd, setShowAdd] = useState(false);
-  const [newMed, setNewMed] = useState({ name: '', strength: '', form: 'Tablet', category: '' });
+  const [isAddingInline, setIsAddingInline] = useState(false);
+  const [newRowData, setNewRowData] = useState({
+    name: '',
+    strength: '',
+    form: 'Tablet',
+    category: 'Cardiovascular',
+    status: 'In Stock',
+  });
 
-  const filtered = medicines.filter(m => {
+  const handleStartInlineAdd = () => {
+    setIsAddingInline(true);
+    setNewRowData({
+      name: '',
+      strength: '',
+      form: 'Tablet',
+      category: 'Cardiovascular',
+      status: 'In Stock',
+    });
+  };
+
+  const handleSaveInlineMedicine = () => {
+    if (!newRowData.name) return;
+
+    const newMed = {
+      id: `MED-00${medicineList.length + 1}`,
+      name: newRowData.name.toUpperCase(),
+      strength: newRowData.strength || 'Standard',
+      form: newRowData.form,
+      category: newRowData.category || 'General',
+      status: 'In Stock',
+    };
+
+    setMedicineList(prev => [newMed, ...prev]);
+    setIsAddingInline(false);
+    setNewRowData({ name: '', strength: '', form: 'Tablet', category: 'Cardiovascular', status: 'In Stock' });
+  };
+
+  const handleCancelInline = () => {
+    setIsAddingInline(false);
+  };
+
+  const filtered = medicineList.filter(m => {
     const q = search.toLowerCase();
     return m.name.toLowerCase().includes(q) || m.category.toLowerCase().includes(q);
   });
@@ -16,14 +55,18 @@ export default function Medicines() {
     <div className="space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="page-header mb-0">
-          <h1 className="page-title">Medicines</h1>
-          <p className="page-subtitle">{medicines.length} medicines in the library</p>
+          <h1 className="page-title">Medicines Library</h1>
+          <p className="page-subtitle">{medicineList.length} medicines in the hospital library</p>
         </div>
-        <button onClick={() => setShowAdd(true)} className="btn-primary flex-shrink-0">
-          <Plus size={16} /> Add Medicine
+        <button
+          onClick={handleStartInlineAdd}
+          className="btn-primary flex-shrink-0"
+        >
+          <Plus size={16} /> Add Medicine (Inline Row)
         </button>
       </div>
 
+      {/* Search Bar */}
       <div className="card p-4">
         <div className="relative">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -37,27 +80,98 @@ export default function Medicines() {
         </div>
       </div>
 
+      {/* Medicines Table */}
       <div className="card overflow-hidden">
-        {filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-            <Pill size={36} className="mb-2 opacity-30" />
-            <p className="text-sm">No medicines found</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Medicine Name</th>
-                  <th>Strength</th>
-                  <th className="hidden sm:table-cell">Form</th>
-                  <th className="hidden md:table-cell">Category</th>
-                  <th>Status</th>
+        <div className="overflow-x-auto">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th className="w-12">#</th>
+                <th>Medicine Name</th>
+                <th>Strength</th>
+                <th className="hidden sm:table-cell">Form</th>
+                <th className="hidden md:table-cell">Category</th>
+                <th>Status</th>
+                <th className="text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {/* Direct Inline Add Row */}
+              {isAddingInline && (
+                <tr className="bg-amber-50/60 border-2 border-amber-300 animate-fade-in">
+                  <td className="text-slate-400 text-xs font-mono font-bold">+</td>
+                  <td>
+                    <input
+                      type="text"
+                      className="form-input text-xs font-semibold uppercase"
+                      placeholder="Medicine Name *"
+                      value={newRowData.name}
+                      onChange={e => setNewRowData(d => ({ ...d, name: e.target.value }))}
+                      autoFocus
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      className="form-input text-xs"
+                      placeholder="Strength (e.g. 500 MG)"
+                      value={newRowData.strength}
+                      onChange={e => setNewRowData(d => ({ ...d, strength: e.target.value }))}
+                    />
+                  </td>
+                  <td className="hidden sm:table-cell">
+                    <select
+                      className="form-select text-xs"
+                      value={newRowData.form}
+                      onChange={e => setNewRowData(d => ({ ...d, form: e.target.value }))}
+                    >
+                      {['Tablet', 'Capsule', 'Syrup', 'Injection', 'Inhaler', 'Cream', 'Drops'].map(f => (
+                        <option key={f}>{f}</option>
+                      ))}
+                    </select>
+                  </td>
+                  <td className="hidden md:table-cell">
+                    <input
+                      type="text"
+                      className="form-input text-xs"
+                      placeholder="Category (e.g. Cardiovascular)"
+                      value={newRowData.category}
+                      onChange={e => setNewRowData(d => ({ ...d, category: e.target.value }))}
+                    />
+                  </td>
+                  <td>
+                    <span className="badge badge-active text-[10px]">In Stock</span>
+                  </td>
+                  <td className="text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        onClick={handleSaveInlineMedicine}
+                        className="p-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md transition-colors"
+                        title="Save Medicine"
+                      >
+                        <Check size={14} />
+                      </button>
+                      <button
+                        onClick={handleCancelInline}
+                        className="p-1.5 bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-md transition-colors"
+                        title="Cancel"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {filtered.map((m, i) => (
+              )}
+
+              {filtered.length === 0 && !isAddingInline ? (
+                <tr>
+                  <td colSpan={7} className="text-center py-12 text-slate-400">
+                    <Pill size={32} className="mx-auto mb-2 opacity-30" />
+                    <p className="text-sm">No medicines found</p>
+                  </td>
+                </tr>
+              ) : (
+                filtered.map((m, i) => (
                   <tr key={m.id}>
                     <td className="text-slate-400 text-xs font-mono">{i + 1}</td>
                     <td>
@@ -65,62 +179,27 @@ export default function Medicines() {
                         <div className="w-7 h-7 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
                           <Pill size={13} className="text-purple-700" />
                         </div>
-                        <span className="font-medium text-slate-900">{m.name}</span>
+                        <span className="font-semibold text-slate-900 text-xs">{m.name}</span>
                       </div>
                     </td>
-                    <td className="text-slate-600">{m.strength}</td>
-                    <td className="hidden sm:table-cell text-slate-600">{m.form}</td>
+                    <td className="text-slate-600 text-xs font-medium">{m.strength}</td>
+                    <td className="hidden sm:table-cell text-slate-600 text-xs">{m.form}</td>
                     <td className="hidden md:table-cell">
-                      <span className="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full">{m.category}</span>
+                      <span className="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full font-medium">{m.category}</span>
                     </td>
                     <td>
-                      <span className="badge badge-active">{m.status}</span>
+                      <span className="badge badge-active text-[10px]">{m.status}</span>
+                    </td>
+                    <td className="text-right text-xs text-slate-400 font-mono">
+                      {m.id}
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      {/* Add Medicine Modal */}
-      {showAdd && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-xl animate-fade-in">
-            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="font-semibold text-slate-900">Add Medicine</h3>
-              <button onClick={() => setShowAdd(false)} className="text-slate-400 hover:text-slate-600">✕</button>
-            </div>
-            <div className="p-5 space-y-4">
-              <div>
-                <label className="form-label">Medicine Name *</label>
-                <input className="form-input" value={newMed.name} onChange={e => setNewMed(m => ({ ...m, name: e.target.value }))} placeholder="e.g. Paracetamol" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="form-label">Strength</label>
-                  <input className="form-input" value={newMed.strength} onChange={e => setNewMed(m => ({ ...m, strength: e.target.value }))} placeholder="e.g. 500 mg" />
-                </div>
-                <div>
-                  <label className="form-label">Form</label>
-                  <select className="form-select" value={newMed.form} onChange={e => setNewMed(m => ({ ...m, form: e.target.value }))}>
-                    {['Tablet', 'Capsule', 'Syrup', 'Injection', 'Inhaler', 'Cream', 'Drops'].map(f => <option key={f}>{f}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="form-label">Category</label>
-                <input className="form-input" value={newMed.category} onChange={e => setNewMed(m => ({ ...m, category: e.target.value }))} placeholder="e.g. Antibiotic" />
-              </div>
-            </div>
-            <div className="flex gap-2 px-5 pb-5 justify-end">
-              <button onClick={() => setShowAdd(false)} className="btn-secondary">Cancel</button>
-              <button onClick={() => setShowAdd(false)} className="btn-primary">Add Medicine</button>
-            </div>
-          </div>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
-      )}
+      </div>
     </div>
   );
 }
