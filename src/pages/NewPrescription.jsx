@@ -4,7 +4,7 @@ import {
   ArrowLeft, Plus, Trash2, CheckCircle, Save, Eye,
   User, Stethoscope, Pill, FileText, Activity, Check, X, Edit2
 } from 'lucide-react';
-import { mockPatients, mockMedicines } from '../data/mockData';
+import { mockPatients, mockMedicines, mockPrescriptions } from '../data/mockData';
 import { durationUnits } from '../data/medicines';
 import { currentDoctor } from '../data/doctors';
 
@@ -26,7 +26,9 @@ export default function NewPrescription() {
   const patientParamId = searchParams.get('patient');
   const repeatParamId = searchParams.get('repeat');
 
-  const repeatRx = mockPrescriptions.find(r => r.id === repeatParamId);
+  const rawRepeatId = repeatParamId ? decodeURIComponent(repeatParamId).trim() : '';
+  const cleanRepeatId = rawRepeatId.replace(/[\s_]/g, '-');
+  const repeatRx = mockPrescriptions.find(r => r && (r.id === rawRepeatId || r.id === cleanRepeatId || (r.id && r.id.replace(/[\s_]/g, '-') === cleanRepeatId)));
 
   const [selectedPatient, setSelectedPatient] = useState(
     mockPatients.find(p => p.id === (repeatRx?.patientId || patientParamId)) || mockPatients[0]
