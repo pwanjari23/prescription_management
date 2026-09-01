@@ -140,20 +140,21 @@ export default function PrescriptionPreview() {
       {/* ════════════════════════════════════════════════════════════════════════ */}
       {/* ── THE EXACT PRESCRIPTION TEMPLATE ────────────────────────────────────── */}
       {/* ════════════════════════════════════════════════════════════════════════ */}
-      <div
-        ref={printRef}
-        id="prescription-sheet"
-        className="bg-white mx-auto font-sans text-slate-900 shadow-md border border-slate-200"
-        style={{
-          width: '794px',
-          minHeight: '1123px',
-          padding: '36px 44px',
-          boxSizing: 'border-box',
-          fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-          color: '#111827',
-          backgroundColor: '#FFFFFF',
-        }}
-      >
+      <div className="w-full overflow-x-auto pb-4">
+        <div
+          ref={printRef}
+          id="prescription-sheet"
+          className="bg-white mx-auto font-sans text-slate-900 shadow-md border border-slate-200"
+          style={{
+            width: '794px',
+            minHeight: '1123px',
+            padding: '36px 44px',
+            boxSizing: 'border-box',
+            fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+            color: '#111827',
+            backgroundColor: '#FFFFFF',
+          }}
+        >
         {/* ══ HEADER ══════════════════════════════════════════════════════════ */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', paddingBottom: '14px', borderBottom: '1.5px solid #1e293b' }}>
           {/* Logo & Hospital Name */}
@@ -463,6 +464,7 @@ export default function PrescriptionPreview() {
           </div>
         </div>
       </div>
+    </div>
 
       {/* Print Styles */}
       <style>{`
