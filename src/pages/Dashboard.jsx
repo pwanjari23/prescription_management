@@ -153,9 +153,7 @@ export default function Dashboard() {
               <thead>
                 <tr>
                   <th>Patient Name</th>
-                  <th>Age / Gender</th>
                   <th>Appt Time</th>
-                  <th>Reason</th>
                   <th>Status</th>
                   <th className="text-right">Actions</th>
                 </tr>
@@ -176,16 +174,10 @@ export default function Dashboard() {
                         </div>
                       </div>
                     </td>
-                    <td className="text-slate-600 text-xs">
-                      {apt.age} yrs · {apt.gender}
-                    </td>
                     <td>
                       <span className="text-xs font-semibold text-slate-800 bg-slate-100 px-2 py-0.5 rounded font-mono">
                         {apt.appointmentTime}
                       </span>
-                    </td>
-                    <td className="text-slate-600 text-xs max-w-[160px] truncate" title={apt.reason}>
-                      {apt.reason}
                     </td>
                     <td>
                       <AppointmentStatusBadge status={apt.status} />
