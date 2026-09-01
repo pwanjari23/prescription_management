@@ -62,7 +62,7 @@ export default function Medicines() {
           onClick={handleStartInlineAdd}
           className="btn-primary flex-shrink-0"
         >
-          <Plus size={16} /> Add Medicine (Inline Row)
+          <Plus size={16} /> Add Medicine
         </button>
       </div>
 

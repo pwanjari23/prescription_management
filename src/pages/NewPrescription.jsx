@@ -298,7 +298,7 @@ export default function NewPrescription() {
             onClick={handleAddNewRow}
             className="btn-primary btn-sm"
           >
-            <Plus size={14} /> Add Medicine (New Row)
+            <Plus size={14} /> Add Medicine
           </button>
         </div>
 
